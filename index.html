@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>GitHub Repo Explorer</title>
+<style>
+  body {
+    font-family: sans-serif;
+    padding: 20px;
+    background: #f8f8f8;
+  }
+  h1 {
+    font-size: 1.5em;
+  }
+  ul {
+    list-style: none;
+    padding: 0;
+  }
+  li {
+    padding: 5px 0;
+  }
+  a {
+    color: #0366d6;
+    text-decoration: none;
+  }
+  a:hover {
+    text-decoration: underline;
+  }
+  .back {
+    display: inline-block;
+    margin-bottom: 10px;
+    padding: 5px 10px;
+    background: #ddd;
+    border-radius: 4px;
+    color: black;
+  }
+</style>
+</head>
+<body>
+<h1>GitHub Repo Explorer</h1>
+<div id="path"></div>
+<ul id="file-list"></ul>
+
+<script>
+const repoOwner = "55guh";
+const repoName = "55guh.github.io";
+let currentPath = "";
+
+// Read path from URL query
+const urlParams = new URLSearchParams(window.location.search);
+if (urlParams.has("path")) {
+  currentPath = decodeURIComponent(urlParams.get("path"));
+}
+
+async function fetchFiles(path = "") {
+  const apiUrl = `https://api.github.com/repos/${repoOwner}/${repoName}/contents/${path}`;
+  const res = await fetch(apiUrl);
+  if (!res.ok) {
+    document.getElementById('file-list').innerHTML = `<li>Error loading files</li>`;
+    return;
+  }
+  const files = await res.json();
+
+  files.sort((a, b) => a.type.localeCompare(b.type) || a.name.localeCompare(b.name));
+
+  let html = "";
+
+  if (path) {
+    html += `<li><a href="#" class="back" onclick="goBack(event)">⬅ Go Back</a></li>`;
+  }
+
+  files.forEach(file => {
+    if (file.name.toLowerCase() === "index.html") return;
+
+    if (file.type === "dir") {
+      html += `<li>📁 <a href="#" onclick="openFolder('${path ? path + '/' : ''}${file.name}', event)">${file.name}</a></li>`;
+    } else {
+      const fileUrl = `https://55guh.github.io/${path ? path + '/' : ''}${file.name}`;
+      html += `<li>📄 <a href="${fileUrl}" target="_blank">${file.name}</a></li>`;
+    }
+  });
+
+  document.getElementById('file-list').innerHTML = html;
+  document.getElementById('path').textContent = `/${path}`;
+
+  // Update the URL so it can be shared
+  const newUrl = path ? `?path=${encodeURIComponent(path)}` : "";
+  history.replaceState(null, "", newUrl);
+}
+
+function openFolder(folderPath, e) {
+  e.preventDefault();
+  currentPath = folderPath;
+  fetchFiles(currentPath);
+}
+
+function goBack(e) {
+  e.preventDefault();
+  const parts = currentPath.split('/');
+  parts.pop();
+  currentPath = parts.join('/');
+  fetchFiles(currentPath);
+}
+
+fetchFiles(currentPath);
+</script>
+</body>
+</html>
