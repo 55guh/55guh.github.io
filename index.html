@@ -5,121 +5,108 @@
 <title>55Guh</title>
 <link href="https://fonts.googleapis.com/css2?family=Oswald:wght@700&display=swap" rel="stylesheet">
 <style>
-    body {
-        font-family: 'Oswald', sans-serif;
-        font-weight: 700;
-        background: #f5f5f5;
-        color: #222;
-        padding: 20px;
-    }
-    h1 {
-        font-size: 2em;
-        margin-bottom: 5px;
-    }
-    #datetime {
-        font-size: 1.2em;
-        margin-bottom: 20px;
-        color: #555;
-    }
-    a {
-        display: block;
-        padding: 4px 0;
-        text-decoration: none;
-        color: #0073e6;
-    }
-    a:hover {
-        text-decoration: underline;
-    }
-    .folder {
-        font-weight: bold;
-    }
-    .back {
-        margin-bottom: 15px;
-        display: inline-block;
-    }
-    .size {
-        color: #888;
-        font-size: 0.9em;
-    }
+  body {
+    font-family: 'Oswald', sans-serif;
+    margin: 20px;
+    background-color: #f9f9f9;
+  }
+  h1 {
+    font-size: 2em;
+  }
+  ul {
+    list-style-type: none;
+    padding: 0;
+  }
+  li {
+    margin: 5px 0;
+  }
+  a {
+    text-decoration: none;
+    color: #0073e6;
+  }
+  a:hover {
+    text-decoration: underline;
+  }
+  .date-time {
+    margin-bottom: 15px;
+    font-size: 1.1em;
+  }
 </style>
 </head>
 <body>
+
 <h1>55Guh</h1>
-<div id="datetime"></div>
-<div id="file-list"></div>
+<div class="date-time" id="dateTime"></div>
+<button onclick="goBack()">Go Back</button>
+<ul id="fileList"></ul>
 
 <script>
-function updateDateTime() {
-    const now = new Date();
-    const months = [
-        "January", "February", "March", "April", "May", "June",
-        "July", "August", "September", "October", "November", "December"
-    ];
-    const day = now.getDate();
-    const suffix = (day % 10 === 1 && day !== 11) ? "st" :
-                   (day % 10 === 2 && day !== 12) ? "nd" :
-                   (day % 10 === 3 && day !== 13) ? "rd" : "th";
-    const formattedDate = `${months[now.getMonth()]} ${day}${suffix}, ${now.getFullYear()}`;
-    const formattedTime = now.toLocaleTimeString();
-    document.getElementById("datetime").textContent = `${formattedDate} — ${formattedTime}`;
-}
-setInterval(updateDateTime, 1000);
-updateDateTime();
+const repoOwner = "55guh";
+const repoName = "55guh.github.io";
+const apiUrl = `https://api.github.com/repos/${repoOwner}/${repoName}/contents/`;
+let currentPath = decodeURIComponent(window.location.pathname.replace(/^\/+/, ''));
 
-async function loadRepo(path = "") {
-    const apiUrl = `https://api.github.com/repos/55guh/55guh.github.io/contents/${path}`;
-    const res = await fetch(apiUrl);
-    if (!res.ok) {
-        document.getElementById("file-list").innerHTML = `<p>Failed to load.</p>`;
-        return;
-    }
-    let data = await res.json();
+if (currentPath.endsWith("/")) currentPath = currentPath.slice(0, -1);
 
-    const container = document.getElementById("file-list");
-    container.innerHTML = "";
+function fetchFiles(path = "") {
+  fetch(apiUrl + path)
+    .then(response => response.json())
+    .then(data => {
+      const list = document.getElementById("fileList");
+      list.innerHTML = "";
+      data.forEach(file => {
+        if (file.name.toLowerCase() === "index.html") return;
 
-    if (path) {
-        const parentPath = path.split("/").slice(0, -1).join("/");
-        const backUrl = parentPath ? `?path=${parentPath}` : "";
-        container.innerHTML += `<a href="${backUrl}" class="back">⬅ Go Back</a>`;
-    }
-
-    data = data.filter(file => file.name !== "index.html");
-
-    data.sort((a, b) => {
-        if (a.type === b.type) {
-            return a.name.localeCompare(b.name);
-        }
-        return a.type === "dir" ? -1 : 1;
-    });
-
-    data.forEach(file => {
         let icon = "";
-        const lowerName = file.name.toLowerCase();
+        const ext = file.name.split('.').pop().toLowerCase();
 
-        if (/\.(exe|dmg|msi|bat|sh)$/.test(lowerName)) {
-            icon = "💻 ";
-        } else if (/\.(apk|ipa)$/.test(lowerName)) {
-            icon = "📱 ";
-        } else if (/\.(mp4|mov|avi|mkv|webm)$/.test(lowerName)) {
-            icon = "🎥 ";
-        } else if (file.type === "dir") {
-            icon = "📁 ";
-        }
+        if (["exe", "dmg", "msi"].includes(ext)) icon = "💻 ";
+        else if (["apk", "ipa"].includes(ext)) icon = "📱 ";
+        else if (["mp4", "avi", "mov", "webm", "mkv"].includes(ext)) icon = "🎥 ";
 
+        const li = document.createElement("li");
         if (file.type === "dir") {
-            container.innerHTML += `<a class="folder" href="?path=${path ? path + "/" : ""}${file.name}">${icon}${file.name}</a>`;
+          li.innerHTML = `📁 <a href="?path=${encodeURIComponent(path ? path + '/' + file.name : file.name)}">${file.name}</a>`;
         } else {
-            const fileUrl = `https://55guh.github.io/${path ? path + "/" : ""}${file.name}`;
-            const sizeKB = file.size ? ` <span class="size">(${(file.size / 1024).toFixed(1)} KB)</span>` : "";
-            container.innerHTML += `<a href="${fileUrl}" target="_blank">${icon}${file.name}</a>${sizeKB}`;
+          li.innerHTML = `${icon}<a href="https://${repoName}/${path ? path + '/' + file.name : file.name}" target="_blank">${file.name}</a>`;
         }
+        list.appendChild(li);
+      });
+    })
+    .catch(err => {
+      document.getElementById("fileList").innerHTML = "<li>Error loading files.</li>";
     });
+}
+
+function goBack() {
+  if (!currentPath) return;
+  let parts = currentPath.split('/');
+  parts.pop();
+  let newPath = parts.join('/');
+  window.location.href = "?path=" + encodeURIComponent(newPath);
 }
 
 const urlParams = new URLSearchParams(window.location.search);
-const currentPath = urlParams.get("path") || "";
-loadRepo(currentPath);
+const pathFromUrl = urlParams.get("path");
+if (pathFromUrl) {
+  currentPath = decodeURIComponent(pathFromUrl);
+}
+fetchFiles(currentPath);
+
+// Date + Time
+function updateDateTime() {
+  const now = new Date();
+  const options = { month: 'long', day: 'numeric', year: 'numeric' };
+  let day = now.getDate();
+  let suffix = "th";
+  if (day % 10 === 1 && day !== 11) suffix = "st";
+  else if (day % 10 === 2 && day !== 12) suffix = "nd";
+  else if (day % 10 === 3 && day !== 13) suffix = "rd";
+  const formattedDate = now.toLocaleDateString("en-US", { month: "long" }) + " " + day + suffix + ", " + now.getFullYear();
+  document.getElementById("dateTime").textContent = formattedDate;
+}
+updateDateTime();
 </script>
+
 </body>
 </html>
