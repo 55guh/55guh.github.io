@@ -1,152 +1,125 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
 <meta charset="UTF-8">
 <title>55Guh</title>
 <link href="https://fonts.googleapis.com/css2?family=Oswald:wght@700&display=swap" rel="stylesheet">
 <style>
-  body {
-    font-family: 'Oswald', sans-serif;
-    font-weight: 700;
-    padding: 20px;
-    background: #f8f8f8;
-  }
-  h1 {
-    font-size: 2em;
-    margin-bottom: 10px;
-  }
-  #path {
-    margin: 8px 0 12px;
-    opacity: .8;
-  }
-  ul {
-    list-style: none;
-    padding: 0;
-    margin: 0;
-  }
-  li {
-    padding: 6px 0;
-  }
-  a {
-    color: #0366d6;
-    text-decoration: none;
-    word-break: break-word;
-  }
-  a:hover {
-    text-decoration: underline;
-  }
-  .back {
-    display: inline-block;
-    margin-bottom: 10px;
-    padding: 5px 10px;
-    background: #ddd;
-    border-radius: 4px;
-    color: black;
-  }
-  .row {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-  }
-  .icon {
-    width: 1.4em;
-  }
+    body {
+        font-family: 'Oswald', sans-serif;
+        font-weight: 700;
+        background: #f5f5f5;
+        color: #222;
+        padding: 20px;
+    }
+    h1 {
+        font-size: 2em;
+        margin-bottom: 5px;
+    }
+    #datetime {
+        font-size: 1.2em;
+        margin-bottom: 20px;
+        color: #555;
+    }
+    a {
+        display: block;
+        padding: 4px 0;
+        text-decoration: none;
+        color: #0073e6;
+    }
+    a:hover {
+        text-decoration: underline;
+    }
+    .folder {
+        font-weight: bold;
+    }
+    .back {
+        margin-bottom: 15px;
+        display: inline-block;
+    }
+    .size {
+        color: #888;
+        font-size: 0.9em;
+    }
 </style>
 </head>
 <body>
 <h1>55Guh</h1>
-<div id="path"></div>
-<ul id="file-list"></ul>
+<div id="datetime"></div>
+<div id="file-list"></div>
 
 <script>
-const repoOwner = "55guh";
-const repoName  = "55guh.github.io";
-let currentPath = "";
-
-// Read path from URL query
-const urlParams = new URLSearchParams(window.location.search);
-if (urlParams.has("path")) {
-  currentPath = decodeURIComponent(urlParams.get("path"));
+function updateDateTime() {
+    const now = new Date();
+    const months = [
+        "January", "February", "March", "April", "May", "June",
+        "July", "August", "September", "October", "November", "December"
+    ];
+    const day = now.getDate();
+    const suffix = (day % 10 === 1 && day !== 11) ? "st" :
+                   (day % 10 === 2 && day !== 12) ? "nd" :
+                   (day % 10 === 3 && day !== 13) ? "rd" : "th";
+    const formattedDate = `${months[now.getMonth()]} ${day}${suffix}, ${now.getFullYear()}`;
+    const formattedTime = now.toLocaleTimeString();
+    document.getElementById("datetime").textContent = `${formattedDate} — ${formattedTime}`;
 }
+setInterval(updateDateTime, 1000);
+updateDateTime();
 
-// Sets of extensions for special icons
-const pcExts  = new Set([
-  "exe","msi","msp","msix","msixbundle","appx","appxbundle",
-  "dmg","pkg","deb","rpm",
-  "sh","bash","run","bin","elf","cmd","bat","ps1","msu","iso"
-]);
-const phoneExts = new Set(["apk","aab","ipa"]);
-
-// Decide icon based on file
-function getIcon(file) {
-  if (file.type === "dir") return "📁";
-  const name = file.name.toLowerCase();
-  const ext  = name.includes(".") ? name.split(".").pop() : "";
-  if (phoneExts.has(ext)) return "📱";
-  if (pcExts.has(ext))    return "🖥️";
-  return "📄";
-}
-
-async function fetchFiles(path = "") {
-  const apiUrl = `https://api.github.com/repos/${repoOwner}/${repoName}/contents/${path}`;
-  const res = await fetch(apiUrl);
-  if (!res.ok) {
-    document.getElementById('file-list').innerHTML = `<li>Error loading files</li>`;
-    return;
-  }
-  let files = await res.json();
-
-  // Sort: folders first, then files (alphabetical)
-  files.sort((a, b) => (a.type === b.type ? a.name.localeCompare(b.name) : a.type === "dir" ? -1 : 1));
-
-  let html = "";
-
-  if (path) {
-    html += `<li><a href="#" class="back" onclick="goBack(event)">⬅ Go Back</a></li>`;
-  }
-
-  files.forEach(file => {
-    if (file.name.toLowerCase() === "index.html") return; // exclude index.html
-
-    const displayPath = path ? `${path}/${file.name}` : file.name;
-    const icon = getIcon(file);
-
-    if (file.type === "dir") {
-      html += `<li class="row"><span class="icon">${icon}</span>
-                 <a href="#" onclick="openFolder('${displayPath}', event)">${file.name}</a>
-               </li>`;
-    } else {
-      const fileUrl = `https://55guh.github.io/${displayPath}`;
-      html += `<li class="row"><span class="icon">${icon}</span>
-                 <a href="${fileUrl}" target="_blank" rel="noopener noreferrer">${file.name}</a>
-               </li>`;
+async function loadRepo(path = "") {
+    const apiUrl = `https://api.github.com/repos/55guh/55guh.github.io/contents/${path}`;
+    const res = await fetch(apiUrl);
+    if (!res.ok) {
+        document.getElementById("file-list").innerHTML = `<p>Failed to load.</p>`;
+        return;
     }
-  });
+    let data = await res.json();
 
-  document.getElementById('file-list').innerHTML = html;
-  document.getElementById('path').textContent = `/${path}`;
+    const container = document.getElementById("file-list");
+    container.innerHTML = "";
 
-  // Update the URL so it can be shared
-  const newUrl = path ? `?path=${encodeURIComponent(path)}` : "";
-  history.replaceState(null, "", newUrl);
+    if (path) {
+        const parentPath = path.split("/").slice(0, -1).join("/");
+        const backUrl = parentPath ? `?path=${parentPath}` : "";
+        container.innerHTML += `<a href="${backUrl}" class="back">⬅ Go Back</a>`;
+    }
+
+    data = data.filter(file => file.name !== "index.html");
+
+    data.sort((a, b) => {
+        if (a.type === b.type) {
+            return a.name.localeCompare(b.name);
+        }
+        return a.type === "dir" ? -1 : 1;
+    });
+
+    data.forEach(file => {
+        let icon = "";
+        const lowerName = file.name.toLowerCase();
+
+        if (/\.(exe|dmg|msi|bat|sh)$/.test(lowerName)) {
+            icon = "💻 ";
+        } else if (/\.(apk|ipa)$/.test(lowerName)) {
+            icon = "📱 ";
+        } else if (/\.(mp4|mov|avi|mkv|webm)$/.test(lowerName)) {
+            icon = "🎥 ";
+        } else if (file.type === "dir") {
+            icon = "📁 ";
+        }
+
+        if (file.type === "dir") {
+            container.innerHTML += `<a class="folder" href="?path=${path ? path + "/" : ""}${file.name}">${icon}${file.name}</a>`;
+        } else {
+            const fileUrl = `https://55guh.github.io/${path ? path + "/" : ""}${file.name}`;
+            const sizeKB = file.size ? ` <span class="size">(${(file.size / 1024).toFixed(1)} KB)</span>` : "";
+            container.innerHTML += `<a href="${fileUrl}" target="_blank">${icon}${file.name}</a>${sizeKB}`;
+        }
+    });
 }
 
-function openFolder(folderPath, e) {
-  e.preventDefault();
-  currentPath = folderPath;
-  fetchFiles(currentPath);
-}
-
-function goBack(e) {
-  e.preventDefault();
-  const parts = currentPath.split('/').filter(Boolean);
-  parts.pop();
-  currentPath = parts.join('/');
-  fetchFiles(currentPath);
-}
-
-// Initial load
-fetchFiles(currentPath);
+const urlParams = new URLSearchParams(window.location.search);
+const currentPath = urlParams.get("path") || "";
+loadRepo(currentPath);
 </script>
 </body>
 </html>
