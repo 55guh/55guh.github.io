@@ -5,108 +5,104 @@
 <title>55Guh</title>
 <link href="https://fonts.googleapis.com/css2?family=Oswald:wght@700&display=swap" rel="stylesheet">
 <style>
-  body {
-    font-family: 'Oswald', sans-serif;
-    margin: 20px;
-    background-color: #f9f9f9;
-  }
-  h1 {
-    font-size: 2em;
-  }
-  ul {
-    list-style-type: none;
-    padding: 0;
-  }
-  li {
-    margin: 5px 0;
-  }
-  a {
-    text-decoration: none;
-    color: #0073e6;
-  }
-  a:hover {
-    text-decoration: underline;
-  }
-  .date-time {
-    margin-bottom: 15px;
-    font-size: 1.1em;
-  }
+    body {
+        font-family: 'Oswald', sans-serif;
+        background-color: #f4f4f4;
+        padding: 20px;
+    }
+    h1 {
+        font-size: 2em;
+        margin-bottom: 10px;
+    }
+    .item {
+        padding: 5px 0;
+    }
+    .folder {
+        font-weight: bold;
+        color: blue;
+    }
+    .back {
+        display: inline-block;
+        margin-bottom: 15px;
+        cursor: pointer;
+        color: red;
+    }
+    #clock {
+        float: right;
+        font-size: 1.2em;
+    }
 </style>
 </head>
 <body>
-
-<h1>55Guh</h1>
-<div class="date-time" id="dateTime"></div>
-<button onclick="goBack()">Go Back</button>
-<ul id="fileList"></ul>
+<h1>55Guh <span id="clock"></span></h1>
+<div class="back" onclick="goBack()">⬅ Go Back</div>
+<div id="file-list"></div>
 
 <script>
-const repoOwner = "55guh";
-const repoName = "55guh.github.io";
-const apiUrl = `https://api.github.com/repos/${repoOwner}/${repoName}/contents/`;
-let currentPath = decodeURIComponent(window.location.pathname.replace(/^\/+/, ''));
+const repo = "55guh/55guh.github.io";
+const baseURL = "https://55guh.github.io/";
+let currentPath = decodeURIComponent(window.location.hash.slice(1) || "");
 
-if (currentPath.endsWith("/")) currentPath = currentPath.slice(0, -1);
+function formatDate() {
+    const options = { month: 'long', day: 'numeric', year: 'numeric' };
+    const date = new Date();
+    const day = date.getDate();
+    const daySuffix = day % 10 === 1 && day !== 11 ? 'st' :
+                      day % 10 === 2 && day !== 12 ? 'nd' :
+                      day % 10 === 3 && day !== 13 ? 'rd' : 'th';
+    return date.toLocaleString('en-US', { month: 'long' }) + ' ' + day + daySuffix + ', ' + date.getFullYear();
+}
 
-function fetchFiles(path = "") {
-  fetch(apiUrl + path)
-    .then(response => response.json())
-    .then(data => {
-      const list = document.getElementById("fileList");
-      list.innerHTML = "";
-      data.forEach(file => {
-        if (file.name.toLowerCase() === "index.html") return;
+function updateClock() {
+    document.getElementById('clock').textContent = formatDate();
+}
+setInterval(updateClock, 1000);
+updateClock();
 
+async function fetchFiles(path) {
+    const res = await fetch(`https://api.github.com/repos/${repo}/contents/${path}`);
+    const files = await res.json();
+
+    let folders = [];
+    let fileItems = [];
+
+    files.forEach(file => {
+        if (file.name === "index.html") return; // exclude index.html
         let icon = "";
-        const ext = file.name.split('.').pop().toLowerCase();
-
-        if (["exe", "dmg", "msi"].includes(ext)) icon = "💻 ";
-        else if (["apk", "ipa"].includes(ext)) icon = "📱 ";
-        else if (["mp4", "avi", "mov", "webm", "mkv"].includes(ext)) icon = "🎥 ";
-
-        const li = document.createElement("li");
         if (file.type === "dir") {
-          li.innerHTML = `📁 <a href="?path=${encodeURIComponent(path ? path + '/' + file.name : file.name)}">${file.name}</a>`;
+            folders.push(`<div class="item folder" onclick="openPath('${file.path}')">📁 ${file.name}</div>`);
         } else {
-          li.innerHTML = `${icon}<a href="https://${repoName}/${path ? path + '/' + file.name : file.name}" target="_blank">${file.name}</a>`;
+            const ext = file.name.split('.').pop().toLowerCase();
+            if (["exe", "dmg", "msi", "bat", "sh", "app"].includes(ext)) {
+                icon = "💻 ";
+            } else if (["apk", "ipa"].includes(ext)) {
+                icon = "📱 ";
+            } else if (["mp4", "mov", "avi", "mkv", "webm"].includes(ext)) {
+                icon = "🎥 ";
+            }
+            fileItems.push(`<div class="item"><a href="${baseURL}${file.path}" target="_blank">${icon}${file.name}</a></div>`);
         }
-        list.appendChild(li);
-      });
-    })
-    .catch(err => {
-      document.getElementById("fileList").innerHTML = "<li>Error loading files.</li>";
     });
+
+    document.getElementById("file-list").innerHTML = folders.join('') + fileItems.join('');
+}
+
+function openPath(path) {
+    currentPath = path;
+    window.location.hash = encodeURIComponent(path);
+    fetchFiles(path);
 }
 
 function goBack() {
-  if (!currentPath) return;
-  let parts = currentPath.split('/');
-  parts.pop();
-  let newPath = parts.join('/');
-  window.location.href = "?path=" + encodeURIComponent(newPath);
+    if (!currentPath) return;
+    const parts = currentPath.split("/");
+    parts.pop();
+    currentPath = parts.join("/");
+    window.location.hash = encodeURIComponent(currentPath);
+    fetchFiles(currentPath);
 }
 
-const urlParams = new URLSearchParams(window.location.search);
-const pathFromUrl = urlParams.get("path");
-if (pathFromUrl) {
-  currentPath = decodeURIComponent(pathFromUrl);
-}
 fetchFiles(currentPath);
-
-// Date + Time
-function updateDateTime() {
-  const now = new Date();
-  const options = { month: 'long', day: 'numeric', year: 'numeric' };
-  let day = now.getDate();
-  let suffix = "th";
-  if (day % 10 === 1 && day !== 11) suffix = "st";
-  else if (day % 10 === 2 && day !== 12) suffix = "nd";
-  else if (day % 10 === 3 && day !== 13) suffix = "rd";
-  const formattedDate = now.toLocaleDateString("en-US", { month: "long" }) + " " + day + suffix + ", " + now.getFullYear();
-  document.getElementById("dateTime").textContent = formattedDate;
-}
-updateDateTime();
 </script>
-
 </body>
 </html>
