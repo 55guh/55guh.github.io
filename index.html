@@ -15,16 +15,22 @@
     font-size: 2em;
     margin-bottom: 10px;
   }
+  #path {
+    margin: 8px 0 12px;
+    opacity: .8;
+  }
   ul {
     list-style: none;
     padding: 0;
+    margin: 0;
   }
   li {
-    padding: 5px 0;
+    padding: 6px 0;
   }
   a {
     color: #0366d6;
     text-decoration: none;
+    word-break: break-word;
   }
   a:hover {
     text-decoration: underline;
@@ -37,6 +43,14 @@
     border-radius: 4px;
     color: black;
   }
+  .row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .icon {
+    width: 1.4em;
+  }
 </style>
 </head>
 <body>
@@ -46,13 +60,31 @@
 
 <script>
 const repoOwner = "55guh";
-const repoName = "55guh.github.io";
+const repoName  = "55guh.github.io";
 let currentPath = "";
 
 // Read path from URL query
 const urlParams = new URLSearchParams(window.location.search);
 if (urlParams.has("path")) {
   currentPath = decodeURIComponent(urlParams.get("path"));
+}
+
+// Sets of extensions for special icons
+const pcExts  = new Set([
+  "exe","msi","msp","msix","msixbundle","appx","appxbundle",
+  "dmg","pkg","deb","rpm",
+  "sh","bash","run","bin","elf","cmd","bat","ps1","msu","iso"
+]);
+const phoneExts = new Set(["apk","aab","ipa"]);
+
+// Decide icon based on file
+function getIcon(file) {
+  if (file.type === "dir") return "📁";
+  const name = file.name.toLowerCase();
+  const ext  = name.includes(".") ? name.split(".").pop() : "";
+  if (phoneExts.has(ext)) return "📱";
+  if (pcExts.has(ext))    return "🖥️";
+  return "📄";
 }
 
 async function fetchFiles(path = "") {
@@ -62,9 +94,10 @@ async function fetchFiles(path = "") {
     document.getElementById('file-list').innerHTML = `<li>Error loading files</li>`;
     return;
   }
-  const files = await res.json();
+  let files = await res.json();
 
-  files.sort((a, b) => a.type.localeCompare(b.type) || a.name.localeCompare(b.name));
+  // Sort: folders first, then files (alphabetical)
+  files.sort((a, b) => (a.type === b.type ? a.name.localeCompare(b.name) : a.type === "dir" ? -1 : 1));
 
   let html = "";
 
@@ -73,13 +106,20 @@ async function fetchFiles(path = "") {
   }
 
   files.forEach(file => {
-    if (file.name.toLowerCase() === "index.html") return;
+    if (file.name.toLowerCase() === "index.html") return; // exclude index.html
+
+    const displayPath = path ? `${path}/${file.name}` : file.name;
+    const icon = getIcon(file);
 
     if (file.type === "dir") {
-      html += `<li>📁 <a href="#" onclick="openFolder('${path ? path + '/' : ''}${file.name}', event)">${file.name}</a></li>`;
+      html += `<li class="row"><span class="icon">${icon}</span>
+                 <a href="#" onclick="openFolder('${displayPath}', event)">${file.name}</a>
+               </li>`;
     } else {
-      const fileUrl = `https://55guh.github.io/${path ? path + '/' : ''}${file.name}`;
-      html += `<li>📄 <a href="${fileUrl}" target="_blank">${file.name}</a></li>`;
+      const fileUrl = `https://55guh.github.io/${displayPath}`;
+      html += `<li class="row"><span class="icon">${icon}</span>
+                 <a href="${fileUrl}" target="_blank" rel="noopener noreferrer">${file.name}</a>
+               </li>`;
     }
   });
 
@@ -99,12 +139,13 @@ function openFolder(folderPath, e) {
 
 function goBack(e) {
   e.preventDefault();
-  const parts = currentPath.split('/');
+  const parts = currentPath.split('/').filter(Boolean);
   parts.pop();
   currentPath = parts.join('/');
   fetchFiles(currentPath);
 }
 
+// Initial load
 fetchFiles(currentPath);
 </script>
 </body>
