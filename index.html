@@ -62,6 +62,21 @@ function updateClock() {
 setInterval(updateClock, 1000);
 updateClock();
 
+function updateHash() {
+    let hash = "";
+    if (currentRepo) hash += `repo=${encodeURIComponent(currentRepo)}`;
+    if (currentPath) hash += `&path=${encodeURIComponent(currentPath)}`;
+    window.location.hash = hash;
+}
+
+function parseHash() {
+    const params = new URLSearchParams(window.location.hash.slice(1));
+    return {
+        repo: params.get("repo"),
+        path: params.get("path") || ""
+    };
+}
+
 // Load repos from 55guh
 async function fetchRepos() {
     const res = await fetch(`https://api.github.com/users/55guh/repos`);
@@ -72,6 +87,7 @@ async function fetchRepos() {
     });
     document.getElementById("file-list").innerHTML = html;
     document.getElementById("back-btn").style.display = "none";
+    updateHash();
 }
 
 async function fetchFiles(repo, path="") {
@@ -101,6 +117,7 @@ async function fetchFiles(repo, path="") {
 
     document.getElementById("file-list").innerHTML = folders.join('') + fileItems.join('');
     document.getElementById("back-btn").style.display = "inline-block";
+    updateHash();
 }
 
 function openRepo(repo) {
@@ -128,8 +145,31 @@ function goBack() {
     fetchFiles(currentRepo, currentPath);
 }
 
-// Start by loading repo list
-fetchRepos();
+// On load, check hash
+window.addEventListener("load", () => {
+    const { repo, path } = parseHash();
+    if (repo) {
+        currentRepo = repo;
+        currentPath = path;
+        fetchFiles(repo, path);
+    } else {
+        fetchRepos();
+    }
+});
+
+// Handle manual hash change (e.g. user edits URL)
+window.addEventListener("hashchange", () => {
+    const { repo, path } = parseHash();
+    if (repo !== currentRepo || path !== currentPath) {
+        currentRepo = repo;
+        currentPath = path;
+        if (repo) {
+            fetchFiles(repo, path);
+        } else {
+            fetchRepos();
+        }
+    }
+});
 </script>
 </body>
 </html>
