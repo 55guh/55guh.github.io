@@ -14,12 +14,7 @@
     }
     h1 {
         font-size: 2em;
-        margin-bottom: 5px;
-    }
-    #clock {
-        font-size: 1em;
-        margin-bottom: 15px;
-        color: #555;
+        margin-bottom: 10px;
     }
     a {
         display: block;
@@ -37,42 +32,24 @@
         margin-bottom: 15px;
         display: inline-block;
     }
+    .clock {
+        margin: 15px 0;
+        font-size: 1.1em;
+        color: #444;
+    }
 </style>
 </head>
 <body>
 <h1>55Guh</h1>
-<div id="clock"></div>
+<div id="clock" class="clock"></div>
 <div id="file-list"></div>
 
 <script>
-function updateClock() {
-    const now = new Date();
-    const options = { month: 'long', day: 'numeric', year: 'numeric' };
-    let formatted = now.toLocaleDateString('en-US', options);
-
-    // Add suffix (st, nd, rd, th)
-    const day = now.getDate();
-    const suffix = (day % 10 === 1 && day !== 11) ? "st" :
-                   (day % 10 === 2 && day !== 12) ? "nd" :
-                   (day % 10 === 3 && day !== 13) ? "rd" : "th";
-    formatted = formatted.replace(day, day + suffix);
-
-    document.getElementById("clock").textContent = formatted;
-}
-setInterval(updateClock, 1000);
-updateClock();
-
-async function loadRepos() {
-    const apiUrl = `https://api.github.com/users/55guh/repos`;
-    const res = await fetch(apiUrl);
-    if (!res.ok) {
-        document.getElementById("file-list").innerHTML = `<p>Failed to load repos.</p>`;
-        return;
-    }
+async function listRepos() {
+    const res = await fetch("https://api.github.com/users/55guh/repos");
     const repos = await res.json();
     const container = document.getElementById("file-list");
     container.innerHTML = "<h2>Select a repository:</h2>";
-
     repos.forEach(repo => {
         container.innerHTML += `<a class="folder" href="?repo=${repo.name}">📁 ${repo.name}</a>`;
     });
@@ -94,14 +71,14 @@ async function loadRepo(repo, path = "") {
         const parentPath = path.split("/").slice(0, -1).join("/");
         const backUrl = parentPath ? `?repo=${repo}&path=${parentPath}` : `?repo=${repo}`;
         container.innerHTML += `<a href="${backUrl}" class="back">⬅ Go Back</a>`;
+    } else {
+        container.innerHTML += `<a href="?" class="back">⬅ Back to Repos</a>`;
     }
 
-    // Filter out index.html for main site
-    if (repo === "55guh.github.io") {
-        data = data.filter(file => file.name !== "index.html");
-    }
+    // Remove index.html
+    data = data.filter(file => file.name !== "index.html");
 
-    // Sort folders first
+    // Sort: folders first
     data.sort((a, b) => {
         if (a.type === b.type) return a.name.localeCompare(b.name);
         return a.type === "dir" ? -1 : 1;
@@ -111,33 +88,54 @@ async function loadRepo(repo, path = "") {
         let icon = "";
         const lowerName = file.name.toLowerCase();
 
-        if (/\.(exe|dmg|msi|bat|sh)$/.test(lowerName)) icon = "💻 ";
-        else if (/\.(apk|ipa)$/.test(lowerName)) icon = "📱 ";
-        else if (/\.(mp4|mov|avi|mkv|webm)$/.test(lowerName)) icon = "🎥 ";
-        else if (file.type === "dir") icon = "📁 ";
+        if (/\.(exe|dmg|msi|bat|sh)$/.test(lowerName)) {
+            icon = "💻 ";
+        } else if (/\.(apk|ipa)$/.test(lowerName)) {
+            icon = "📱 ";
+        } else if (/\.(mp4|mov|avi|mkv|webm)$/.test(lowerName)) {
+            icon = "🎥 ";
+        } else if (file.type === "dir") {
+            icon = "📁 ";
+        }
 
         if (file.type === "dir") {
             container.innerHTML += `<a class="folder" href="?repo=${repo}&path=${path ? path + "/" : ""}${file.name}">${icon}${file.name}</a>`;
         } else {
-            let fileUrl;
-            if (repo === "55guh.github.io") {
-                fileUrl = `https://55guh.github.io/${path ? path + "/" : ""}${file.name}`;
-            } else {
-                fileUrl = `https://raw.githubusercontent.com/55guh/${repo}/main/${path ? path + "/" : ""}${file.name}`;
-            }
+            // ✅ FIX: Use 55guh.github.io instead of raw.githubusercontent
+            const fileUrl = `https://55guh.github.io/${repo}/${path ? path + "/" : ""}${file.name}`;
             container.innerHTML += `<a href="${fileUrl}" target="_blank">${icon}${file.name}</a>`;
         }
     });
 }
 
+// Clock + date
+function updateClock() {
+    const now = new Date();
+    const options = { year: "numeric", month: "long", day: "numeric" };
+    let formatted = now.toLocaleDateString("en-US", options);
+
+    // add "st", "nd", "rd", "th"
+    const day = now.getDate();
+    let suffix = "th";
+    if (day % 10 === 1 && day !== 11) suffix = "st";
+    else if (day % 10 === 2 && day !== 12) suffix = "nd";
+    else if (day % 10 === 3 && day !== 13) suffix = "rd";
+    formatted = formatted.replace(/\d+/, day + suffix);
+
+    document.getElementById("clock").textContent = formatted;
+}
+setInterval(updateClock, 1000);
+updateClock();
+
+// Init
 const urlParams = new URLSearchParams(window.location.search);
 const repo = urlParams.get("repo");
-const path = urlParams.get("path") || "";
+const currentPath = urlParams.get("path") || "";
 
 if (repo) {
-    loadRepo(repo, path);
+    loadRepo(repo, currentPath);
 } else {
-    loadRepos();
+    listRepos();
 }
 </script>
 </body>
