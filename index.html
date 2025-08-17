@@ -7,169 +7,133 @@
 <style>
     body {
         font-family: 'Oswald', sans-serif;
-        background-color: #f4f4f4;
+        font-weight: 700;
+        background: #f5f5f5;
+        color: #222;
         padding: 20px;
     }
     h1 {
         font-size: 2em;
         margin-bottom: 10px;
     }
-    .item {
-        padding: 5px 0;
-        cursor: pointer;
+    a {
+        display: block;
+        padding: 4px 0;
+        text-decoration: none;
+        color: #0073e6;
+    }
+    a:hover {
+        text-decoration: underline;
     }
     .folder {
         font-weight: bold;
-        color: blue;
-    }
-    .repo {
-        font-weight: bold;
-        color: green;
     }
     .back {
-        display: inline-block;
         margin-bottom: 15px;
-        cursor: pointer;
-        color: red;
+        display: inline-block;
     }
     #clock {
-        float: right;
+        margin-bottom: 20px;
         font-size: 1.2em;
     }
 </style>
 </head>
 <body>
-<h1>55Guh <span id="clock"></span></h1>
-<div class="back" onclick="goBack()" id="back-btn" style="display:none;">⬅ Go Back</div>
+<h1>55Guh</h1>
+<div id="clock"></div>
 <div id="file-list"></div>
 
 <script>
-let currentRepo = null;
-let currentPath = "";
-
-function formatDate() {
-    const date = new Date();
-    const day = date.getDate();
-    const daySuffix = day % 10 === 1 && day !== 11 ? 'st' :
-                      day % 10 === 2 && day !== 12 ? 'nd' :
-                      day % 10 === 3 && day !== 13 ? 'rd' : 'th';
-    return date.toLocaleString('en-US', { month: 'long' }) + ' ' + day + daySuffix + ', ' + date.getFullYear();
-}
-
 function updateClock() {
-    document.getElementById('clock').textContent = formatDate();
+    const now = new Date();
+    const options = { month: 'long', day: 'numeric', year: 'numeric' };
+    let formatted = now.toLocaleDateString('en-US', options);
+    const day = now.getDate();
+    let suffix = "th";
+    if (day % 10 === 1 && day !== 11) suffix = "st";
+    else if (day % 10 === 2 && day !== 12) suffix = "nd";
+    else if (day % 10 === 3 && day !== 13) suffix = "rd";
+    formatted = formatted.replace(day, day + suffix);
+    document.getElementById("clock").innerText = formatted;
 }
 setInterval(updateClock, 1000);
 updateClock();
 
-function updateHash() {
-    let hash = "";
-    if (currentRepo) hash += `repo=${encodeURIComponent(currentRepo)}`;
-    if (currentPath) hash += `&path=${encodeURIComponent(currentPath)}`;
-    window.location.hash = hash;
-}
-
-function parseHash() {
-    const params = new URLSearchParams(window.location.hash.slice(1));
-    return {
-        repo: params.get("repo"),
-        path: params.get("path") || ""
-    };
-}
-
-// Load repos from 55guh
-async function fetchRepos() {
-    const res = await fetch(`https://api.github.com/users/55guh/repos`);
-    const repos = await res.json();
-    let html = "<h2>Select a Repository</h2>";
-    repos.forEach(repo => {
-        html += `<div class="item repo" onclick="openRepo('${repo.name}')">📦 ${repo.name}</div>`;
-    });
-    document.getElementById("file-list").innerHTML = html;
-    document.getElementById("back-btn").style.display = "none";
-    updateHash();
-}
-
-async function fetchFiles(repo, path="") {
-    const res = await fetch(`https://api.github.com/repos/55guh/${repo}/contents/${path}`);
-    const files = await res.json();
-
-    let folders = [];
-    let fileItems = [];
-
-    files.forEach(file => {
-        if (file.name === "index.html") return; // exclude index.html
-        let icon = "";
-        if (file.type === "dir") {
-            folders.push(`<div class="item folder" onclick="openPath('${file.path}')">📁 ${file.name}</div>`);
-        } else {
-            const ext = file.name.split('.').pop().toLowerCase();
-            if (["exe", "dmg", "msi", "bat", "sh", "app"].includes(ext)) {
-                icon = "💻 ";
-            } else if (["apk", "ipa"].includes(ext)) {
-                icon = "📱 ";
-            } else if (["mp4", "mov", "avi", "mkv", "webm"].includes(ext)) {
-                icon = "🎥 ";
-            }
-            fileItems.push(`<div class="item"><a href="https://55guh.github.io/${repo}/${file.path}" target="_blank">${icon}${file.name}</a></div>`);
-        }
-    });
-
-    document.getElementById("file-list").innerHTML = folders.join('') + fileItems.join('');
-    document.getElementById("back-btn").style.display = "inline-block";
-    updateHash();
-}
-
-function openRepo(repo) {
-    currentRepo = repo;
-    currentPath = "";
-    fetchFiles(repo);
-}
-
-function openPath(path) {
-    currentPath = path;
-    fetchFiles(currentRepo, path);
-}
-
-function goBack() {
-    if (!currentRepo) return;
-    if (!currentPath) {
-        // back to repo list
-        currentRepo = null;
-        fetchRepos();
+async function loadRepos() {
+    const res = await fetch("https://api.github.com/users/55guh/repos");
+    if (!res.ok) {
+        document.getElementById("file-list").innerHTML = `<p>Failed to load repos.</p>`;
         return;
     }
-    const parts = currentPath.split("/");
-    parts.pop();
-    currentPath = parts.join("/");
-    fetchFiles(currentRepo, currentPath);
+    const repos = await res.json();
+    const container = document.getElementById("file-list");
+    container.innerHTML = "<h2>Select a Repo</h2>";
+    repos.forEach(repo => {
+        container.innerHTML += `<a href="?repo=${repo.name}">${repo.name}</a>`;
+    });
 }
 
-// On load, check hash
-window.addEventListener("load", () => {
-    const { repo, path } = parseHash();
-    if (repo) {
-        currentRepo = repo;
-        currentPath = path;
-        fetchFiles(repo, path);
-    } else {
-        fetchRepos();
+async function loadRepo(repo, path = "") {
+    const apiUrl = `https://api.github.com/repos/55guh/${repo}/contents/${path}`;
+    const res = await fetch(apiUrl);
+    if (!res.ok) {
+        document.getElementById("file-list").innerHTML = `<p>Failed to load.</p>`;
+        return;
     }
-});
+    let data = await res.json();
 
-// Handle manual hash change (e.g. user edits URL)
-window.addEventListener("hashchange", () => {
-    const { repo, path } = parseHash();
-    if (repo !== currentRepo || path !== currentPath) {
-        currentRepo = repo;
-        currentPath = path;
-        if (repo) {
-            fetchFiles(repo, path);
-        } else {
-            fetchRepos();
-        }
+    const container = document.getElementById("file-list");
+    container.innerHTML = "";
+
+    if (path) {
+        const parentPath = path.split("/").slice(0, -1).join("/");
+        const backUrl = parentPath ? `?repo=${repo}&path=${parentPath}` : `?repo=${repo}`;
+        container.innerHTML += `<a href="${backUrl}" class="back">⬅ Go Back</a>`;
     }
-});
+
+    // Exclude index.html
+    data = data.filter(file => file.name !== "index.html");
+
+    // Sort: folders first, then files
+    data.sort((a, b) => {
+        if (a.type === b.type) {
+            return a.name.localeCompare(b.name);
+        }
+        return a.type === "dir" ? -1 : 1;
+    });
+
+    data.forEach(file => {
+        let icon = "";
+        const lowerName = file.name.toLowerCase();
+
+        if (/\.(exe|dmg|msi|bat|sh)$/.test(lowerName)) {
+            icon = "💻 ";
+        } else if (/\.(apk|ipa)$/.test(lowerName)) {
+            icon = "📱 ";
+        } else if (/\.(mp4|mov|avi|mkv|webm)$/.test(lowerName)) {
+            icon = "🎥 ";
+        } else if (file.type === "dir") {
+            icon = "📁 ";
+        }
+
+        if (file.type === "dir") {
+            container.innerHTML += `<a class="folder" href="?repo=${repo}&path=${path ? path + "/" : ""}${file.name}">${icon}${file.name}</a>`;
+        } else {
+            const fileUrl = `https://55guh.github.io/${path ? path + "/" : ""}${file.name}`;
+            container.innerHTML += `<a href="${fileUrl}" target="_blank">${icon}${file.name}</a>`;
+        }
+    });
+}
+
+const urlParams = new URLSearchParams(window.location.search);
+const repo = urlParams.get("repo");
+const currentPath = urlParams.get("path") || "";
+
+if (!repo) {
+    loadRepos();
+} else {
+    loadRepo(repo, currentPath);
+}
 </script>
 </body>
 </html>
