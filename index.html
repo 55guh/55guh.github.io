@@ -1,504 +1,222 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8" />
+<meta charset="UTF-8">
 <title>55Guh</title>
-<meta name="viewport" content="width=device-width, initial-scale=1" />
-<link href="https://fonts.googleapis.com/css2?family=Oswald:wght@700&display=swap" rel="stylesheet">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link href="https://fonts.googleapis.com/css2?family=Oswald:wght@500;700&display=swap" rel="stylesheet">
 <style>
-  :root {
-    --bg:#f6f7fb; --fg:#222; --muted:#666; --link:#0366d6; --card:#fff; --border:#e5e7eb;
-  }
-  * { box-sizing: border-box; }
-  body {
-    margin:0; background:var(--bg); color:var(--fg);
-    font-family:'Oswald', system-ui, -apple-system, Segoe UI, Roboto, sans-serif; font-weight:700;
-  }
-  header {
-    position:sticky; top:0; z-index:50; background:var(--card); border-bottom:1px solid var(--border);
-  }
-  .topbar {
-    display:flex; align-items:center; gap:12px; padding:10px 14px;
-  }
-  .ua { font-size:.85rem; color:var(--muted); flex:1; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;}
-  .title { text-align:center; font-size:1.4rem; flex:0 0 auto; }
-  .platform { font-size:.85rem; color:var(--muted); margin-left:auto; }
-  .subbar {
-    display:flex; align-items:center; justify-content:space-between; padding:6px 14px 10px 14px; gap:10px;
-  }
-  .datetime { color:var(--muted); font-size:1rem; }
-  .crumbs { font-size:1rem; white-space:nowrap; overflow-x:auto; }
-  .crumbs a { color:var(--link); text-decoration:none; }
-  .crumbs span.sep { margin:0 6px; color:var(--muted); }
-  main { max-width:1100px; margin:16px auto; padding:0 14px 24px; display:grid; grid-template-columns:1fr 320px; gap:16px; }
-  @media (max-width: 960px){ main { grid-template-columns:1fr; } }
-  .card {
-    background:var(--card); border:1px solid var(--border); border-radius:10px; overflow:hidden;
-  }
-  .section-title { padding:10px 12px; border-bottom:1px solid var(--border); background:#fafbff; }
-  .list { padding:8px 12px; }
-  .item { display:flex; align-items:center; gap:10px; padding:8px 6px; border-bottom:1px dashed var(--border);}
-  .item:last-child { border-bottom:0; }
-  .name { flex:1; min-width:0; }
-  .name a { color:var(--link); text-decoration:none; word-break:break-word; }
-  .size { font-size:.85rem; color:var(--muted); }
-  .icon { width:1.4em; text-align:center; }
-  .toolbar { display:flex; flex-wrap:wrap; gap:8px; padding:10px 12px; border-top:1px solid var(--border); background:#fafbff; }
-  button, input, select, textarea {
-    font:inherit; font-weight:700;
-  }
-  button {
-    cursor:pointer; border:1px solid var(--border); background:#fff; border-radius:8px; padding:7px 10px;
-  }
-  .muted { color:var(--muted); }
-  .mono { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-weight:600; }
-  /* Modal */
-  .modal {
-    position:fixed; inset:0; display:none; background:rgba(0,0,0,.65);
-    align-items:center; justify-content:center; padding:20px; z-index:100;
-  }
-  .modal.open { display:flex; }
-  .modal-card { width:min(100%, 980px); max-height:90vh; background:#fff; border-radius:12px; overflow:hidden; display:flex; flex-direction:column; }
-  .modal-head { padding:10px 14px; border-bottom:1px solid var(--border); display:flex; gap:10px; align-items:center; }
-  .modal-body { padding:0; overflow:auto; background:#fafafa; }
-  .modal-foot { padding:10px 14px; border-top:1px solid var(--border); display:flex; gap:8px; flex-wrap:wrap; }
-  .viewer { padding:12px; }
-  .viewer pre { background:#fff; border:1px solid var(--border); border-radius:8px; padding:12px; overflow:auto; white-space:pre-wrap; word-break:break-word;}
-  .viewer img { max-width:100%; height:auto; display:block; margin:auto; }
-  .viewer video { width:100%; max-height:70vh; outline:none; background:#000; }
-  iframe.htmlview { width:100%; height:70vh; border:0; background:#fff; }
-  /* Push panel */
-  .push-form { display:grid; gap:8px; padding:12px; }
-  .push-form label { font-size:.95rem; color:var(--muted); }
-  .push-row { display:grid; gap:8px; grid-template-columns:1fr 1fr; }
-  .push-row > div { display:flex; flex-direction:column; gap:6px; }
-  .push-form input, .push-form textarea, .push-form select { border:1px solid var(--border); border-radius:8px; padding:8px; background:#fff; font-weight:600;}
-  .ok { color:#15803d; }
-  .err { color:#b91c1c; }
-  .hint { font-size:.85rem; color:var(--muted); }
-  .badge { font-size:.75rem; background:#eef2ff; color:#3730a3; border:1px solid #c7d2fe; padding:2px 6px; border-radius:999px; }
-  /* Image editor mini */
-  .imgtools { display:flex; gap:8px; flex-wrap:wrap; margin:8px 0; }
-  canvas#editCanvas { max-width:100%; background:#222; display:block; margin:auto; border-radius:8px; }
-  /* noscript */
-  noscript { display:block; padding:12px; background:#fff3cd; color:#7a5d00; border:1px solid #ffe69c; margin:12px; border-radius:8px; }
+    body {
+        font-family: 'Oswald', sans-serif;
+        background: #f5f5f5;
+        color: #222;
+        margin: 0; padding: 0;
+    }
+    header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        background: #222;
+        color: #fff;
+        padding: 10px;
+        font-size: 14px;
+    }
+    h1 {
+        text-align: center;
+        margin: 10px;
+    }
+    #breadcrumbs {
+        font-size: 14px;
+        margin: 10px;
+    }
+    #breadcrumbs a { color: #0073e6; text-decoration: none; }
+    #breadcrumbs a:hover { text-decoration: underline; }
+    #file-list a {
+        display: block;
+        padding: 6px;
+        text-decoration: none;
+        color: #0073e6;
+    }
+    #file-list a:hover, #file-list a.active {
+        background: #ddd;
+    }
+    .viewer {
+        margin: 15px;
+        padding: 10px;
+        background: #fff;
+        border: 1px solid #ccc;
+    }
+    textarea {
+        width: 100%;
+        height: 400px;
+        font-family: monospace;
+    }
+    video, img {
+        max-width: 100%;
+    }
+    #search-bar {
+        margin: 10px;
+        padding: 5px;
+        width: calc(100% - 20px);
+    }
+    .mobile { font-size: 16px; }
+    noscript {
+        background: red;
+        color: white;
+        display: block;
+        text-align: center;
+        padding: 10px;
+        font-weight: bold;
+    }
 </style>
 </head>
 <body>
-<noscript><strong>JavaScript is disabled.</strong> This explorer requires JS to browse repositories, view files, and push changes.</noscript>
+<noscript>⚠ JavaScript is required for this site to work properly.</noscript>
 
 <header>
-  <div class="topbar">
-    <div class="ua" id="ua"></div>
-    <div class="title">55Guh</div>
-    <div class="platform" id="platform"></div>
-  </div>
-  <div class="subbar">
-    <div class="datetime" id="datetime"></div>
-    <div class="crumbs" id="breadcrumbs"></div>
-  </div>
+    <div>User Agent: <span id="ua"></span></div>
+    <div>Platform: <span id="platform"></span></div>
 </header>
 
-<main>
-  <!-- Explorer -->
-  <section class="card">
-    <div class="section-title">Explorer</div>
-    <div class="list" id="list"></div>
-    <div class="toolbar">
-      <button id="btnRepos">📦 Repos</button>
-      <button id="btnUp">⬅ Go Up</button>
-      <span class="muted" id="where"></span>
-    </div>
-  </section>
+<h1>55Guh</h1>
 
-  <!-- Side: commits + push -->
-  <aside class="card">
-    <div class="section-title">Commits & Push</div>
-    <div id="commits" class="list">
-      <div class="muted">Recent commits will appear here…</div>
-    </div>
-    <div class="section-title">Request Push</div>
-    <form class="push-form" id="pushForm" onsubmit="return false;">
-      <div><label>GitHub Token <span class="hint">(stored in memory only)</span></label>
-        <input type="password" id="token" placeholder="ghp_…"></div>
-      <div class="push-row">
-        <div><label>Repo</label><input id="pushRepo" placeholder="e.g. 55guh.github.io"></div>
-        <div><label>Branch</label><input id="pushBranch" placeholder="main (default)"></div>
-      </div>
-      <div class="push-row">
-        <div><label>Path (in repo)</label><input id="pushPath" placeholder="folder/newfile.txt"></div>
-        <div><label>Commit Message</label><input id="pushMsg" placeholder="Update from explorer"></div>
-      </div>
-      <div><label>Content</label><textarea id="pushContent" rows="6" placeholder="File contents…"></textarea></div>
-      <div class="hint">Tip: To update an existing file, leave everything the same; the explorer will auto-fetch the file SHA.</div>
-      <div style="display:flex; gap:8px; flex-wrap:wrap;">
-        <button id="btnVerify">✅ Verify Token</button>
-        <button id="btnPush">⬆️ Push File</button>
-        <span id="pushStatus" class="muted"></span>
-      </div>
-    </form>
-  </aside>
-</main>
+<div id="breadcrumbs"></div>
+<input type="text" id="search-bar" placeholder="Search files (* = wildcard for all)">
 
-<!-- Modal viewer -->
-<div class="modal" id="viewerModal" role="dialog" aria-modal="true" aria-labelledby="viewerTitle">
-  <div class="modal-card">
-    <div class="modal-head">
-      <div id="viewerTitle" class="mono"></div>
-      <span class="badge" id="viewerType"></span>
-      <a id="viewerOpen" target="_blank" rel="noopener" style="margin-left:auto;">Open direct ↗</a>
-      <button onclick="closeViewer()">✖</button>
-    </div>
-    <div class="modal-body">
-      <div id="viewer" class="viewer"></div>
-    </div>
-    <div class="modal-foot" id="viewerActions"></div>
-  </div>
-</div>
+<div id="file-list"></div>
+
+<div id="viewer" class="viewer"></div>
+
+<script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
 
 <script>
-/* ===== Top bar info ===== */
-document.getElementById('ua').textContent = navigator.userAgent || 'Unknown UA';
-document.getElementById('platform').textContent = navigator.platform || 'Unknown platform';
+const org = "55guh";
+let currentRepo = "55guh.github.io";
+let currentPath = "";
+let token = localStorage.getItem("gh_token") || "";
 
-function updateDateTime() {
-  const now = new Date();
-  const months = ["January","February","March","April","May","June","July","August","September","October","November","December"];
-  const d = now.getDate();
-  const suffix = (d%10===1&&d!==11)?"st":(d%10===2&&d!==12)?"nd":(d%10===3&&d!==13)?"rd":"th";
-  const date = `${months[now.getMonth()]} ${d}${suffix}, ${now.getFullYear()}`;
-  const time = now.toLocaleTimeString();
-  document.getElementById('datetime').textContent = `${date} — ${time}`;
-}
-updateDateTime(); setInterval(updateDateTime, 1000);
+document.getElementById("ua").innerText = navigator.userAgent;
+document.getElementById("platform").innerText = navigator.platform;
 
-/* ===== State & helpers ===== */
-const owner = "55guh";
-let currentRepo = null; // string or null
-let currentPath = "";   // e.g. "sub/dir"
-const listEl = document.getElementById('list');
-const whereEl = document.getElementById('where');
-const commitsEl = document.getElementById('commits');
-
-const pcExts = new Set(["exe","msi","msp","msix","msixbundle","appx","appxbundle","dmg","pkg","deb","rpm","sh","bash","run","bin","elf","cmd","bat","ps1","msu","iso"]);
-const phoneExts = new Set(["apk","aab","ipa"]);
-const videoExts = new Set(["mp4","mkv","webm","mov","avi","flv","wmv","m4v","3gp","ts","m2ts"]);
-const imageExts = new Set(["png","jpg","jpeg","gif","bmp","webp","svg","tiff","ico","heic","avif"]);
-const audioExts = new Set(["mp3","wav","flac","aac","ogg","m4a","opus","aiff","wma","mid","midi"]);
-const pdfExts = new Set(["pdf"]);
-
-function iconFor(file) {
-  if (file.type === "dir") return "📁";
-  const name = file.name.toLowerCase();
-  const ext = name.includes('.') ? name.split('.').pop() : "";
-  if (phoneExts.has(ext)) return "📱";
-  if (pcExts.has(ext))    return "🖥️";
-  if (videoExts.has(ext)) return "🎥";
-  if (imageExts.has(ext)) return "📷";
-  if (audioExts.has(ext)) return "🎵";
-  if (pdfExts.has(ext))   return "📕";
-  return "📄";
-}
-function humanSize(bytes) {
-  if (!Number.isFinite(bytes) || bytes === 0) return "";
-  const kb = bytes/1024; if (kb < 1024) return `(${kb.toFixed(1)} KB)`;
-  const mb = kb/1024; if (mb < 1024) return `(${mb.toFixed(2)} MB)`;
-  const gb = mb/1024; return `(${gb.toFixed(2)} GB)`;
-}
-function buildFileURL(repo, path, name) {
-  // For the pages repo, files live at root: https://55guh.github.io/path/file
-  // For other repos, GitHub Pages serves: https://55guh.github.io/{repo}/{path}/file
-  const base = (repo === "55guh.github.io") ? "https://55guh.github.io" : `https://55guh.github.io/${repo}`;
-  const p = path ? `/${path}` : "";
-  return `${base}${p}/${encodeURIComponent(name)}`;
-}
-function setHash() {
-  const params = new URLSearchParams();
-  if (currentRepo) params.set("repo", currentRepo);
-  if (currentPath) params.set("path", currentPath);
-  location.hash = params.toString();
-}
-function parseHash() {
-  const params = new URLSearchParams(location.hash.slice(1));
-  return { repo: params.get("repo"), path: params.get("path") || "" };
+// ────────────────────────────────
+// Breadcrumbs
+function renderBreadcrumbs(repo, path) {
+    const bc = document.getElementById("breadcrumbs");
+    const parts = path ? path.split("/") : [];
+    let html = `<a href="?repo=${repo}">${repo}</a>`;
+    let cumulative = "";
+    parts.forEach((p, i) => {
+        cumulative += (i ? "/" : "") + p;
+        html += ` / <a href="?repo=${repo}&path=${cumulative}">${p}</a>`;
+    });
+    bc.innerHTML = html;
 }
 
-/* ===== Breadcrumbs ===== */
-function renderCrumbs() {
-  const c = document.getElementById('breadcrumbs');
-  if (!currentRepo) { c.innerHTML = `<a href="#" onclick="loadRepos();return false;">Repos</a>`; return; }
-  const parts = currentPath.split('/').filter(Boolean);
-  const items = [];
-  items.push(`<a href="#" onclick="openRepo('${currentRepo}');return false;">📦 ${currentRepo}</a>`);
-  let acc = "";
-  parts.forEach((seg, idx) => {
-    acc = acc ? `${acc}/${seg}` : seg;
-    items.push(`<a href="#" onclick="openPath('${acc}');return false;">📁 ${seg}</a>`);
-  });
-  c.innerHTML = items.join(`<span class="sep">/</span>`);
-}
+// ────────────────────────────────
+// Load repo contents
+async function loadRepo(repo, path="") {
+    currentRepo = repo;
+    currentPath = path;
 
-/* ===== API calls ===== */
-async function loadRepos() {
-  currentRepo = null; currentPath = ""; setHash(); renderCrumbs();
-  whereEl.textContent = "All repositories for 55guh";
-  listEl.innerHTML = `<div class="muted">Loading repos…</div>`;
-  const res = await fetch(`https://api.github.com/users/${owner}/repos?per_page=100&sort=full_name`);
-  if (!res.ok) { listEl.innerHTML = `<div class="err">Failed to load repos.</div>`; return; }
-  const repos = await res.json();
-  repos.sort((a,b)=>a.name.localeCompare(b.name));
-  listEl.innerHTML = "";
-  repos.forEach(r => {
-    const row = document.createElement('div'); row.className = "item";
-    row.innerHTML = `<div class="icon">📦</div>
-      <div class="name"><a href="#" onclick="openRepo('${r.name}');return false;">${r.name}</a></div>
-      <div class="size muted">${r.private ? "private" : "public"}</div>`;
-    listEl.appendChild(row);
-  });
-  commitsEl.innerHTML = `<div class="muted">Select a repo to load commits…</div>`;
-}
+    renderBreadcrumbs(repo, path);
 
-async function loadPath(repo, path="") {
-  whereEl.textContent = repo + (path ? ` / ${path}` : "");
-  renderCrumbs();
-  listEl.innerHTML = `<div class="muted">Loading…</div>`;
-  let url = `https://api.github.com/repos/${owner}/${repo}/contents/${path}`;
-  const res = await fetch(url);
-  if (!res.ok) { listEl.innerHTML = `<div class="err">Failed to load contents.</div>`; return; }
-  let files = await res.json();
-  // Exclude index.html only in main site
-  if (repo === "55guh.github.io") files = files.filter(f => f.name.toLowerCase() !== "index.html");
-  files.sort((a,b)=> (a.type===b.type) ? a.name.localeCompare(b.name) : (a.type==="dir" ? -1 : 1));
-  listEl.innerHTML = "";
-  files.forEach(file => {
-    const row = document.createElement('div'); row.className="item";
-    const icon = iconFor(file);
-    const sizeText = (file.type==="file" && "size" in file) ? `<span class="size">${humanSize(file.size)}</span>` : "";
-    if (file.type==="dir") {
-      row.innerHTML = `<div class="icon">${icon}</div>
-        <div class="name"><a href="#" onclick="openPath('${path?path+'/':''}${file.name}');return false;">${file.name}</a></div>
-        <div class="size"></div>`;
-    } else {
-      const fileUrl = buildFileURL(repo, path, file.name);
-      row.innerHTML = `<div class="icon">${icon}</div>
-        <div class="name"><a href="#" onclick="viewFile('${repo}','${path}','${file.name}','${file.download_url}','${file.sha}');return false;">${file.name}</a></div>
-        <div class="size">${sizeText}</div>`;
+    let url = `https://api.github.com/repos/${org}/${repo}/contents/${path}`;
+    let res = await fetch(url);
+    if (!res.ok) { document.getElementById("file-list").innerHTML = "<p>Failed to load.</p>"; return; }
+    let data = await res.json();
+
+    // filter binary files
+    const binaryExt = /\.(exe|dmg|msi|apk|ipa|zip|tar|gz|7z)$/i;
+
+    // sort folders first
+    data.sort((a,b) => a.type === b.type ? a.name.localeCompare(b.name) : (a.type==="dir"?-1:1));
+
+    let container = document.getElementById("file-list");
+    container.innerHTML = "";
+
+    // Back link
+    if (path) {
+        let parent = path.split("/").slice(0, -1).join("/");
+        container.innerHTML += `<a href="?repo=${repo}&path=${parent}">⬅ Go Back</a>`;
     }
-    listEl.appendChild(row);
-  });
-  loadCommits(repo, path);
+
+    // Search filter
+    const searchVal = document.getElementById("search-bar").value.toLowerCase();
+    const regex = new RegExp("^" + searchVal.replace("*",".*") + "$");
+
+    data.forEach(file => {
+        if (searchVal && !regex.test(file.name.toLowerCase())) return;
+        let icon = file.type === "dir" ? "📁 " : "📄 ";
+        if (/\.(mp4|webm)$/i.test(file.name)) icon = "🎥 ";
+        if (/\.(png|jpg|jpeg|gif)$/i.test(file.name)) icon = "🖼️ ";
+        if (/\.(exe|dmg|msi)$/i.test(file.name)) icon = "💻 ";
+        if (/\.(apk|ipa)$/i.test(file.name)) icon = "📱 ";
+
+        if (file.type === "dir") {
+            container.innerHTML += `<a href="?repo=${repo}&path=${path ? path + "/" : ""}${file.name}">${icon}${file.name}</a>`;
+        } else if (!binaryExt.test(file.name)) {
+            container.innerHTML += `<a href="#" onclick="viewFile('${repo}','${path}','${file.name}')">${icon}${file.name}</a>`;
+        }
+    });
 }
 
-async function loadCommits(repo, path) {
-  commitsEl.innerHTML = `<div class="muted">Loading commits…</div>`;
-  // path param narrows commits to this folder/file
-  const res = await fetch(`https://api.github.com/repos/${owner}/${repo}/commits?per_page=10${path?`&path=${encodeURIComponent(path)}`:""}`);
-  if (!res.ok) { commitsEl.innerHTML = `<div class="err">Could not load commits.</div>`; return; }
-  const commits = await res.json();
-  if (!Array.isArray(commits) || commits.length===0) { commitsEl.innerHTML = `<div class="muted">No recent commits for this path.</div>`; return; }
-  const frag = document.createElement('div'); frag.className="list";
-  frag.innerHTML = commits.map(c => {
-    const msg = (c.commit && c.commit.message) ? c.commit.message.split('\n')[0] : '(no message)';
-    const when = c.commit ? new Date(c.commit.author.date).toLocaleString() : '';
-    const author = (c.commit && c.commit.author && c.commit.author.name) ? c.commit.author.name : '';
-    const url = c.html_url;
-    return `<div class="item">
-      <div class="icon">📝</div>
-      <div class="name mono"><a href="${url}" target="_blank" rel="noopener">${msg}</a>
-        <div class="muted" style="font-weight:600;">by ${author} — ${when}</div></div>
-    </div>`;
-  }).join("");
-  commitsEl.innerHTML = ""; commitsEl.appendChild(frag);
+// ────────────────────────────────
+// File viewer
+async function viewFile(repo, path, file) {
+    const fileUrl = `https://raw.githubusercontent.com/${org}/${repo}/main/${path ? path+"/":""}${file}`;
+    const ext = file.split(".").pop().toLowerCase();
+    const viewer = document.getElementById("viewer");
+    viewer.innerHTML = `<h3>${file}</h3>`;
+
+    if (["png","jpg","jpeg","gif"].includes(ext)) {
+        viewer.innerHTML += `<img src="${fileUrl}" alt="${file}">`;
+    } else if (["mp4","webm"].includes(ext)) {
+        viewer.innerHTML += `<video controls src="${fileUrl}"></video>`;
+    } else if (ext === "md") {
+        let txt = await (await fetch(fileUrl)).text();
+        viewer.innerHTML += marked.parse(txt);
+    } else if (["html","js","json","txt","css"].includes(ext)) {
+        let txt = await (await fetch(fileUrl)).text();
+        viewer.innerHTML += `<textarea readonly>${txt}</textarea>`;
+    } else {
+        viewer.innerHTML += `<p>Preview not available.</p>`;
+    }
 }
 
-/* ===== Navigation ===== */
-function openRepo(repo){ currentRepo = repo; currentPath = ""; setHash(); loadPath(currentRepo, currentPath); }
-function openPath(path){ currentPath = path; setHash(); loadPath(currentRepo, currentPath); }
-document.getElementById('btnRepos').onclick = () => loadRepos();
-document.getElementById('btnUp').onclick = () => {
-  if (!currentRepo) return;
-  if (!currentPath) { loadRepos(); return; }
-  const parts = currentPath.split('/').filter(Boolean); parts.pop(); openPath(parts.join('/'));
-};
-
-window.addEventListener('hashchange', () => {
-  const {repo, path} = parseHash();
-  if (repo && (repo !== currentRepo || path !== currentPath)) { currentRepo = repo; currentPath = path; loadPath(repo, path); }
-  if (!repo) loadRepos();
+// ────────────────────────────────
+// Keyboard navigation
+let selectedIndex = 0;
+document.addEventListener("keydown", e => {
+    let links = [...document.querySelectorAll("#file-list a")];
+    if (!links.length) return;
+    if (e.key === "ArrowDown") {
+        selectedIndex = (selectedIndex+1) % links.length;
+    } else if (e.key === "ArrowUp") {
+        selectedIndex = (selectedIndex-1+links.length) % links.length;
+    } else if (e.key === "Enter") {
+        links[selectedIndex].click();
+    }
+    links.forEach(l => l.classList.remove("active"));
+    links[selectedIndex].classList.add("active");
 });
 
-/* ===== File viewer (text/image/video/html) + mini image editor ===== */
-const modal = document.getElementById('viewerModal');
-const viewer = document.getElementById('viewer');
-const vTitle = document.getElementById('viewerTitle');
-const vType = document.getElementById('viewerType');
-const vOpen = document.getElementById('viewerOpen');
-const vActions = document.getElementById('viewerActions');
+// ────────────────────────────────
+// Search bar live update
+document.getElementById("search-bar").addEventListener("input", () => {
+    loadRepo(currentRepo, currentPath);
+});
 
-function closeViewer(){ modal.classList.remove('open'); viewer.innerHTML=""; vActions.innerHTML=""; }
-modal.addEventListener('click', e => { if (e.target===modal) closeViewer(); });
+// ────────────────────────────────
+// Auto update checker (every 30s)
+setInterval(() => {
+    loadRepo(currentRepo, currentPath);
+}, 30000);
 
-async function viewFile(repo, path, name, downloadUrl, sha){
-  const ext = name.toLowerCase().split('.').pop();
-  const pagesUrl = buildFileURL(repo, path, name);
-  vOpen.href = pagesUrl;
-  vTitle.textContent = `${repo}/${path?path+'/':''}${name}`;
-  const mimeCategory =
-    imageExts.has(ext) ? 'image' :
-    videoExts.has(ext) ? 'video' :
-    ext === 'html' || ext === 'htm' ? 'html' :
-    'text'; // default
-
-  vType.textContent = mimeCategory.toUpperCase();
-  viewer.innerHTML = ""; vActions.innerHTML = "";
-  modal.classList.add('open');
-
-  try {
-    if (mimeCategory === 'image') {
-      const img = document.createElement('img');
-      img.src = pagesUrl; img.alt = name; viewer.appendChild(img);
-      // Image editor controls
-      const tools = document.createElement('div'); tools.className='imgtools';
-      tools.innerHTML = `
-        <button id="imgEdit">🛠️ Edit</button>
-        <a href="${pagesUrl}" download>⬇️ Download</a>
-      `;
-      vActions.appendChild(tools);
-      document.getElementById('imgEdit').onclick = () => openImageEditor(pagesUrl);
-    } else if (mimeCategory === 'video') {
-      const vid = document.createElement('video'); vid.controls = true; vid.src = pagesUrl;
-      viewer.appendChild(vid);
-      vActions.innerHTML = `<a href="${pagesUrl}" download>⬇️ Download</a>`;
-    } else if (mimeCategory === 'html') {
-      const iframe = document.createElement('iframe');
-      iframe.className = "htmlview";
-      // sandbox to avoid script privileges while allowing basic rendering
-      iframe.setAttribute('sandbox','allow-forms allow-same-origin allow-scripts'); 
-      iframe.src = pagesUrl;
-      viewer.appendChild(iframe);
-      vActions.innerHTML = `<a href="${pagesUrl}" target="_blank" rel="noopener">Open full page ↗</a>`;
-    } else {
-      // text
-      const res = await fetch(downloadUrl);
-      const text = await res.text();
-      const pre = document.createElement('pre'); pre.textContent = text; viewer.appendChild(pre);
-      vActions.innerHTML = `
-        <button id="copyBtn">📋 Copy</button>
-        <a href="${pagesUrl}" download>⬇️ Download</a>
-      `;
-      document.getElementById('copyBtn').onclick = async () => {
-        await navigator.clipboard.writeText(text);
-        alert("Copied to clipboard");
-      };
-    }
-  } catch (e) {
-    viewer.innerHTML = `<div class="err">Failed to load file.</div>`;
-  }
-}
-
-/* ===== Simple Image Editor (canvas) ===== */
-function openImageEditor(url){
-  viewer.innerHTML = `
-    <div class="viewer">
-      <canvas id="editCanvas"></canvas>
-      <div class="imgtools">
-        <button id="rotL">↶ Rotate Left</button>
-        <button id="rotR">↷ Rotate Right</button>
-        <button id="flipH">⇋ Flip H</button>
-        <button id="flipV">⇵ Flip V</button>
-        <label>Brightness <input id="bright" type="range" min="-100" max="100" value="0"></label>
-        <button id="downloadEd">⬇️ Download Edited</button>
-        <button id="backView">🔙 Back</button>
-      </div>
-    </div>`;
-  const canvas = document.getElementById('editCanvas');
-  const ctx = canvas.getContext('2d');
-  const img = new Image(); img.crossOrigin = "anonymous"; img.src = url;
-  let angle = 0, flipX = 0, flipY = 0, bright = 0;
-  img.onload = () => { canvas.width = img.naturalWidth; canvas.height = img.naturalHeight; draw(); };
-  function draw(){
-    canvas.width = (angle%180===0)? img.naturalWidth : img.naturalHeight;
-    canvas.height= (angle%180===0)? img.naturalHeight: img.naturalWidth;
-    ctx.save();
-    ctx.translate(canvas.width/2, canvas.height/2);
-    ctx.rotate(angle*Math.PI/180);
-    ctx.scale(flipX?-1:1, flipY?-1:1);
-    ctx.filter = `brightness(${100+bright}%)`;
-    ctx.drawImage(img, -img.naturalWidth/2, -img.naturalHeight/2);
-    ctx.restore();
-  }
-  document.getElementById('rotL').onclick = ()=>{ angle=(angle-90+360)%360; draw(); };
-  document.getElementById('rotR').onclick = ()=>{ angle=(angle+90)%360; draw(); };
-  document.getElementById('flipH').onclick = ()=>{ flipX^=1; draw(); };
-  document.getElementById('flipV').onclick = ()=>{ flipY^=1; draw(); };
-  document.getElementById('bright').oninput = (e)=>{ bright=parseInt(e.target.value||0,10); draw(); };
-  document.getElementById('downloadEd').onclick = ()=>{
-    const a=document.createElement('a'); a.download='edited.png'; a.href=canvas.toDataURL('image/png'); a.click();
-  };
-  document.getElementById('backView').onclick = ()=> history.back(); // or close + reopen viewer
-}
-
-/* ===== Push (token verify + create/update via Contents API) ===== */
-const pushStatus = document.getElementById('pushStatus');
-document.getElementById('btnVerify').onclick = async ()=>{
-  const token = document.getElementById('token').value.trim();
-  if (!token) { pushStatus.innerHTML = `<span class="err">Enter a token.</span>`; return; }
-  pushStatus.textContent = "Verifying…";
-  const res = await fetch("https://api.github.com/user", { headers:{ "Authorization":`Bearer ${token}` }});
-  if (!res.ok) { pushStatus.innerHTML = `<span class="err">Token invalid.</span>`; return; }
-  const me = await res.json();
-  pushStatus.innerHTML = `<span class="ok">Verified as ${me.login}</span>`;
-};
-
-document.getElementById('btnPush').onclick = async ()=>{
-  const token = document.getElementById('token').value.trim();
-  const repo = document.getElementById('pushRepo').value.trim() || currentRepo || "";
-  const branch = (document.getElementById('pushBranch').value.trim() || "main");
-  const path = document.getElementById('pushPath').value.trim();
-  const message = document.getElementById('pushMsg').value.trim() || "Update from explorer";
-  const contentRaw = document.getElementById('pushContent').value;
-
-  if (!token || !repo || !path) { pushStatus.innerHTML = `<span class="err">Token, repo, and path are required.</span>`; return; }
-  pushStatus.textContent = "Preparing…";
-
-  // Check if file exists to get SHA
-  let sha = undefined;
-  const head = await fetch(`https://api.github.com/repos/${owner}/${repo}/contents/${encodeURIComponent(path)}`, {
-    headers: { "Authorization": `Bearer ${token}` }
-  });
-  if (head.ok) { const meta = await head.json(); if (meta && meta.sha) sha = meta.sha; }
-
-  // Convert to base64
-  const b64 = btoa(unescape(encodeURIComponent(contentRaw)));
-  pushStatus.textContent = "Pushing…";
-  const res = await fetch(`https://api.github.com/repos/${owner}/${repo}/contents/${encodeURIComponent(path)}`, {
-    method:"PUT",
-    headers:{
-      "Authorization":`Bearer ${token}`,
-      "Content-Type":"application/json"
-    },
-    body: JSON.stringify({ message, content:b64, branch, sha })
-  });
-  if (!res.ok) {
-    const errText = await res.text();
-    pushStatus.innerHTML = `<span class="err">Push failed:</span> <span class="mono">${errText.slice(0,300)}</span>`;
-    return;
-  }
-  const data = await res.json();
-  const commitUrl = data && data.commit && data.commit.html_url ? data.commit.html_url : "#";
-  pushStatus.innerHTML = `<span class="ok">Success!</span> <a href="${commitUrl}" target="_blank" rel="noopener">View commit ↗</a>`;
-  // Refresh list if we pushed into current path
-  const affectedDir = path.split('/').slice(0,-1).join('/');
-  if (repo === currentRepo && affectedDir === currentPath) loadPath(currentRepo, currentPath);
-};
-
-/* ===== Init ===== */
-(function init(){
-  // hash-aware boot
-  const {repo, path} = parseHash();
-  if (repo) { currentRepo = repo; currentPath = path; loadPath(repo, path); }
-  else { loadRepos(); }
-})();
+// ────────────────────────────────
+// Init
+const params = new URLSearchParams(location.search);
+loadRepo(params.get("repo") || "55guh.github.io", params.get("path") || "");
 </script>
+
 </body>
 </html>
