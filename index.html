@@ -2,282 +2,175 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<title>55Guh Explorer</title>
+<title>55Guh</title>
 <link href="https://fonts.googleapis.com/css2?family=Oswald:wght@700&display=swap" rel="stylesheet">
 <style>
     body {
         font-family: 'Oswald', sans-serif;
-        font-weight: 700;
-        background: #f9f9f9;
-        color: #222;
-        padding: 20px;
+        background: #f5f5f5;
         margin: 0;
+        padding: 20px;
     }
-    header {
+    h1 {
+        text-align: center;
+        margin-bottom: 20px;
+    }
+    #top-bar {
         display: flex;
         justify-content: space-between;
         margin-bottom: 10px;
-        font-size: 0.9em;
-        color: #555;
+        font-size: 14px;
+        color: #333;
     }
-    h1 {
-        font-size: 2em;
-        margin: 5px 0 10px;
+    #search-container {
+        display: flex;
+        margin: 10px 0;
+    }
+    #search {
+        flex: 1;
+        padding: 6px;
+        font-size: 14px;
+    }
+    #search-btn {
+        padding: 6px 12px;
+        font-size: 14px;
+        margin-left: 5px;
+        cursor: pointer;
     }
     #breadcrumbs {
-        margin-bottom: 10px;
-        font-size: 0.95em;
+        margin: 10px 0;
+        font-size: 14px;
     }
-    #breadcrumbs a {
-        color: #0073e6;
+    ul {
+        list-style: none;
+        padding: 0;
+    }
+    li {
+        padding: 5px 0;
+    }
+    a {
         text-decoration: none;
-        margin-right: 5px;
-    }
-    #breadcrumbs a:hover {
-        text-decoration: underline;
-    }
-    a.file, a.folder {
-        display: block;
-        padding: 4px 0;
-        text-decoration: none;
-        color: #0073e6;
+        color: #0066cc;
     }
     a:hover {
         text-decoration: underline;
     }
-    .folder { font-weight: bold; }
-    #viewer {
-        margin-top: 15px;
-        padding: 10px;
-        border: 1px solid #ccc;
-        background: #fff;
-    }
-    #viewer img {
-        max-width: 100%;
-        transition: transform 0.3s ease;
-    }
-    #viewer img:hover {
-        transform: scale(1.05) rotate(1deg);
-    }
-    #viewer video {
-        max-width: 100%;
-    }
-    #search {
-        margin: 10px 0;
-    }
-    #status {
-        margin: 10px 0;
-        font-size: 0.85em;
-        color: #444;
-    }
-    #token-box {
-        margin-top: 15px;
-        padding: 10px;
-        background: #eef;
-        border: 1px solid #99c;
-    }
-    #token-box input {
-        width: 80%;
-    }
-    noscript {
-        color: red;
-        font-weight: bold;
-    }
-    .selected {
-        background: #e0f0ff;
-    }
 </style>
 </head>
 <body>
-<noscript>⚠ JavaScript is required for 55Guh Explorer.</noscript>
+    <div id="top-bar">
+        <div id="user-agent"></div>
+        <div id="platform"></div>
+    </div>
+    <h1>55Guh</h1>
 
-<header>
-    <div>User Agent: <span id="ua"></span></div>
-    <div>Platform: <span id="platform"></span></div>
-</header>
+    <div id="breadcrumbs"></div>
 
-<h1>55Guh Explorer</h1>
+    <div id="search-container">
+        <input id="search" type="text" placeholder="Search (* = wildcard)">
+        <button id="search-btn">Enter</button>
+    </div>
 
-<div id="breadcrumbs"></div>
-<input type="text" id="search" placeholder="Search (* = wildcard)" />
-<div id="file-list"></div>
-<div id="viewer"></div>
-
-<div id="status">Status: Ready</div>
-
-<div id="token-box">
-    <label>GitHub Token: <input type="password" id="token-input"></label>
-    <button onclick="saveToken()">Save</button>
-    <p><a href="https://docs.github.com/en/authentication/keeping-your-account-and-data-secure/creating-a-personal-access-token" target="_blank">Tutorial: How to get a GitHub Token</a></p>
-    <p>Support: <a href="mailto:online.cdn25@gmail.com">online.cdn25@gmail.com</a></p>
-    <button onclick="requestPush()">Request Push</button>
-</div>
+    <ul id="file-list"></ul>
 
 <script>
-const apiBase = "https://api.github.com";
-let repos = [];
-let currentRepo = "55guh.github.io";
-let currentPath = "";
-let selectedIndex = -1;
-let fileListData = [];
+const ua = navigator.userAgent;
+const platform = navigator.platform;
+document.getElementById("user-agent").textContent = ua;
+document.getElementById("platform").textContent = platform;
 
-// Detect UA + platform
-document.getElementById("ua").textContent = navigator.userAgent;
-document.getElementById("platform").textContent = navigator.platform;
+const params = new URLSearchParams(window.location.search);
+let repo = params.get("repo") || "55guh.github.io";
+let path = params.get("path") || "";
 
-// Token
-function saveToken() {
-    const token = document.getElementById("token-input").value;
-    localStorage.setItem("gh_token", token);
-    document.getElementById("status").textContent = "Status: Token saved.";
+// Breadcrumb navigation
+function renderBreadcrumbs() {
+    const bc = document.getElementById("breadcrumbs");
+    const parts = path.split("/").filter(p => p);
+    let html = `<a href="?repo=${repo}">🏠 ${repo}</a>`;
+    let accum = "";
+    for (let i = 0; i < parts.length; i++) {
+        accum += (i > 0 ? "/" : "") + parts[i];
+        html += " / " + `<a href="?repo=${repo}&path=${accum}">${parts[i]}</a>`;
+    }
+    bc.innerHTML = html;
 }
 
-async function requestPush() {
-    const token = localStorage.getItem("gh_token");
-    if (!token) {
-        alert("No token saved!");
+// File type → emoji mapping
+function getEmoji(filename) {
+    const ext = filename.split(".").pop().toLowerCase();
+    if (["exe","msi","dmg"].includes(ext)) return "💻";
+    if (["apk","ipa"].includes(ext)) return "📱";
+    if (["mp4","webm","mov","avi","mkv"].includes(ext)) return "📹";
+    if (ext === "zip" || ext === "rar" || ext === "7z") return "📦";
+    return "📄";
+}
+
+// Load repo contents
+async function loadFiles() {
+    renderBreadcrumbs();
+    let apiUrl = `https://api.github.com/repos/55guh/${repo}/contents/${path}`;
+    const res = await fetch(apiUrl);
+    if (!res.ok) {
+        document.getElementById("file-list").innerHTML = "<li>❌ Error loading repo</li>";
         return;
     }
-    alert("Push request would be sent (stub).");
-}
+    let data = await res.json();
 
-// Load repos from user
-async function loadRepos() {
-    const res = await fetch(`${apiBase}/users/55guh/repos`);
-    repos = await res.json();
-    showRepos();
-}
+    // Folders first
+    data.sort((a, b) => a.type.localeCompare(b.type));
 
-function showRepos() {
-    const container = document.getElementById("file-list");
-    container.innerHTML = "";
-    repos.forEach(r => {
-        const a = document.createElement("a");
-        a.textContent = "📦 " + r.name;
-        a.href = "#";
-        a.onclick = (e) => {
-            e.preventDefault();
-            currentRepo = r.name;
-            currentPath = "";
-            loadRepo();
-        };
-        container.appendChild(a);
-    });
-    updateBreadcrumbs();
-}
-
-// Breadcrumbs
-function updateBreadcrumbs() {
-    const bc = document.getElementById("breadcrumbs");
-    let parts = currentPath.split("/").filter(Boolean);
-    let crumbs = [`<a href="#" onclick="currentPath=''; loadRepo(); return false;">${currentRepo}</a>`];
-    let accum = "";
-    parts.forEach((p,i) => {
-        accum += (i>0?"/":"") + p;
-        crumbs.push(`<a href="#" onclick="currentPath='${accum}'; loadRepo(); return false;">${p}</a>`);
-    });
-    bc.innerHTML = crumbs.join(" / ");
-}
-
-// File loading
-async function loadRepo() {
-    const url = `${apiBase}/repos/55guh/${currentRepo}/contents/${currentPath}`;
-    const res = await fetch(url);
-    const data = await res.json();
-    fileListData = data.filter(f => f.name !== "index.html");
-    fileListData.sort((a,b)=> (a.type==="dir" && b.type!=="dir")?-1:(a.type!=="dir"&&b.type==="dir")?1:a.name.localeCompare(b.name));
-    renderFileList();
-    updateBreadcrumbs();
-}
-
-// Render
-function renderFileList() {
-    const container = document.getElementById("file-list");
-    container.innerHTML = "";
-    fileListData.forEach((file,i) => {
-        let icon = "";
-        const lower = file.name.toLowerCase();
-        if (/\.(exe|dmg|msi|bat|sh)$/.test(lower)) icon="💻 ";
-        else if (/\.(apk|ipa)$/.test(lower)) icon="📱 ";
-        else if (/\.(mp4|mov|avi|mkv|webm)$/.test(lower)) icon="🎥 ";
-        else if (file.type==="dir") icon="📁 ";
-        const a = document.createElement("a");
-        a.textContent = icon+file.name;
-        a.href="#";
-        a.className = file.type;
-        a.onclick=(e)=>{
-            e.preventDefault();
-            if(file.type==="dir"){
-                currentPath = (currentPath?currentPath+"/":"")+file.name;
-                loadRepo();
-            } else {
-                openFile(file);
-            }
-        };
-        container.appendChild(a);
-    });
-}
-
-// File viewer
-async function openFile(file) {
-    const viewer=document.getElementById("viewer");
-    viewer.innerHTML="<p>Loading...</p>";
-    const url = file.download_url.replace("raw.githubusercontent.com","55guh.github.io");
-    if(/\.(png|jpg|jpeg|gif|svg|webp)$/i.test(file.name)){
-        viewer.innerHTML=`<img src="${url}" alt="${file.name}">`;
-    } else if(/\.(mp4|webm|ogg)$/i.test(file.name)){
-        viewer.innerHTML=`<video controls src="${url}"></video>`;
-    } else if(/\.(md)$/i.test(file.name)){
-        const text=await fetch(url).then(r=>r.text());
-        viewer.innerHTML="<pre>"+text+"</pre>"; // (You could parse markdown)
-    } else if(/\.(html|htm)$/i.test(file.name)){
-        viewer.innerHTML=`<iframe src="${url}" width="100%" height="400"></iframe>`;
-    } else if(/\.(txt|json|csv|xml)$/i.test(file.name)){
-        const text=await fetch(url).then(r=>r.text());
-        viewer.innerHTML="<pre>"+text+"</pre>";
-    } else {
-        viewer.innerHTML=`<p><a href="${url}" target="_blank">Download ${file.name}</a></p>`;
+    let list = "";
+    if (path) {
+        const parent = path.split("/").slice(0, -1).join("/");
+        list += `<li>⬅️ <a href="?repo=${repo}&path=${parent}">Go Back</a></li>`;
     }
-}
 
-// Keyboard navigation
-document.addEventListener("keydown",(e)=>{
-    const links=document.querySelectorAll("#file-list a");
-    if(!links.length)return;
-    if(e.key==="ArrowDown"){selectedIndex=(selectedIndex+1)%links.length;}
-    else if(e.key==="ArrowUp"){selectedIndex=(selectedIndex-1+links.length)%links.length;}
-    else if(e.key==="Enter"&&selectedIndex>=0){links[selectedIndex].click();}
-    else if(e.key==="Backspace"){e.preventDefault(); goBack();}
-    links.forEach((l,i)=>l.classList.toggle("selected",i===selectedIndex));
-});
-
-function goBack(){
-    if(!currentPath)return;
-    currentPath=currentPath.split("/").slice(0,-1).join("/");
-    loadRepo();
-}
-
-// Search
-document.getElementById("search").addEventListener("input",(e)=>{
-    const term=e.target.value.toLowerCase().replace("*","");
-    const links=document.querySelectorAll("#file-list a");
-    links.forEach(l=>{
-        l.style.display=(!term||l.textContent.toLowerCase().includes(term))?"block":"none";
-    });
-});
-
-// Update checker
-setInterval(async()=>{
-    try{
-        const r=await fetch("https://55guh.github.io/");
-        if(r.ok){
-            document.getElementById("status").textContent="Status: Checked "+new Date().toLocaleTimeString();
+    data.forEach(item => {
+        if (item.name === "index.html") return; // skip index.html
+        if (item.type === "dir") {
+            list += `<li>📁 <a href="?repo=${repo}&path=${path ? path + "/" : ""}${item.name}">${item.name}</a></li>`;
+        } else {
+            const url = `https://55guh.github.io/${repo}/${path ? path + "/" : ""}${item.name}`;
+            list += `<li>${getEmoji(item.name)} <a href="${url}" target="_blank">${item.name}</a></li>`;
         }
-    }catch(e){}
-},30000);
+    });
 
-// Start
-loadRepos();
+    document.getElementById("file-list").innerHTML = list;
+}
+
+// Search function
+function runSearch() {
+    const query = document.getElementById("search").value.toLowerCase();
+    const items = document.querySelectorAll("#file-list li");
+    items.forEach(li => {
+        const text = li.innerText.toLowerCase();
+        if (!query || query === "*") {
+            li.style.display = "";
+        } else {
+            li.style.display = text.includes(query) ? "" : "none";
+        }
+    });
+}
+
+// Hook up search
+document.getElementById("search-btn").addEventListener("click", runSearch);
+document.getElementById("search").addEventListener("keydown", e => {
+    if (e.key === "Enter") runSearch();
+    if (e.key === "Backspace") e.stopPropagation(); // keep backspace working
+});
+
+// Global backspace → go up a directory
+document.addEventListener("keydown", e => {
+    if (document.activeElement === document.getElementById("search")) return;
+    if (e.key === "Backspace") {
+        e.preventDefault();
+        const parent = path.split("/").slice(0, -1).join("/");
+        window.location.href = `?repo=${repo}&path=${parent}`;
+    }
+});
+
+loadFiles();
 </script>
 </body>
 </html>
