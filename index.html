@@ -19,11 +19,6 @@
     a:hover { text-decoration: underline; }
     .breadcrumbs { margin: 10px 0; }
     .breadcrumbs a { margin-right: 5px; }
-    .file-viewer { margin-top: 20px; border: 1px solid #ddd; padding: 10px; background: #fff; }
-    .toolbar { margin-top: 10px; }
-    button { margin: 2px; }
-    canvas { max-width: 100%; display: block; margin-top: 10px; }
-    #downloadBtn { margin-top: 10px; display: inline-block; }
   </style>
 </head>
 <body>
@@ -31,11 +26,6 @@
   <h2 id="date"></h2>
   <div class="breadcrumbs" id="breadcrumbs"></div>
   <div id="repo-list"></div>
-  <div class="file-viewer" id="file-viewer" style="display:none;">
-    <button onclick="goBack()">⬅ Go Back</button>
-    <div id="viewer-content"></div>
-    <a id="downloadBtn" href="#" download style="display:none;">⬇ Download File</a>
-  </div>
 
 <script>
 const user = "55guh";
@@ -89,47 +79,22 @@ function goBack() {
   }
 }
 
+async function getDefaultBranch(repo) {
+  const res = await fetch(`https://api.github.com/repos/${user}/${repo}`);
+  const data = await res.json();
+  return data.default_branch || "main";
+}
+
 async function openFile(repo, filepath) {
-  const url = `https://raw.githubusercontent.com/${user}/${repo}/main/${filepath}`;
-  const viewer = document.getElementById("file-viewer");
-  const contentDiv = document.getElementById("viewer-content");
-  const downloadBtn = document.getElementById("downloadBtn");
-  viewer.style.display = "block";
-  contentDiv.innerHTML = "Loading...";
+  const branch = await getDefaultBranch(repo);
+  const url = `https://raw.githubusercontent.com/${user}/${repo}/${branch}/${filepath}`;
 
-  try {
-    const res = await fetch(url);
-    const blob = await res.blob();
-
-    // Decide if binary or text
-    if (blob.type.startsWith("image/")) {
-      const imgURL = URL.createObjectURL(blob);
-      contentDiv.innerHTML = `<img id="img" src="${imgURL}" style="max-width:100%;">`;
-      downloadBtn.style.display = "inline-block";
-      downloadBtn.href = imgURL;
-      downloadBtn.download = filepath.split("/").pop();
-    } else if (blob.type.startsWith("video/")) {
-      const vidURL = URL.createObjectURL(blob);
-      contentDiv.innerHTML = `<video controls src="${vidURL}" style="max-width:100%"></video>`;
-      downloadBtn.style.display = "inline-block";
-      downloadBtn.href = vidURL;
-      downloadBtn.download = filepath.split("/").pop();
-    } else if (blob.type.startsWith("text/") || filepath.endsWith(".md")) {
-      const text = await res.text();
-      contentDiv.innerHTML = `<pre>${escapeHtml(text)}</pre>`;
-      downloadBtn.style.display = "inline-block";
-      downloadBtn.href = url;
-      downloadBtn.download = filepath.split("/").pop();
-    } else {
-      contentDiv.innerHTML = `<p>This file type cannot be displayed.</p>`;
-      downloadBtn.style.display = "inline-block";
-      downloadBtn.href = url;
-      downloadBtn.download = filepath.split("/").pop();
-    }
-  } catch {
-    contentDiv.innerHTML = `<p>Error loading file.</p>`;
-    downloadBtn.style.display = "none";
-  }
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = filepath.split("/").pop(); // file name
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
 }
 
 function updateBreadcrumbs() {
@@ -141,12 +106,6 @@ function updateBreadcrumbs() {
     crumbHTML += ` / <a href="#" onclick="openRepo('${currentRepo}', '${built}')">${p}</a>`;
   });
   document.getElementById("breadcrumbs").innerHTML = crumbHTML;
-}
-
-function escapeHtml(text) {
-  let div = document.createElement("div");
-  div.innerText = text;
-  return div.innerHTML;
 }
 
 listRepos();
