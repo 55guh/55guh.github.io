@@ -5,17 +5,12 @@
   <title>55Guh</title>
   <link href="https://fonts.googleapis.com/css2?family=Oswald:wght@400;700&display=swap" rel="stylesheet">
   <style>
-    body {
-      font-family: 'Oswald', sans-serif;
-      margin: 20px;
-      background: #f6f8fa;
-      color: #24292f;
-    }
+    body { font-family: 'Oswald', sans-serif; margin: 20px; background: #f6f8fa; color: #24292f; }
     h1 { font-size: 2em; }
     h2 { font-size: 1.2em; margin-top: 0; }
     ul { list-style: none; padding: 0; }
     li { margin: 6px 0; }
-    a { text-decoration: none; color: #0366d6; }
+    a { text-decoration: none; color: #0366d6; cursor: pointer; }
     a:hover { text-decoration: underline; }
     .breadcrumbs { margin: 10px 0; }
     .breadcrumbs a { margin-right: 5px; }
@@ -43,39 +38,82 @@ async function listRepos() {
   const res = await fetch(`https://api.github.com/users/${user}/repos`);
   const repos = await res.json();
   const list = document.getElementById("repo-list");
-  list.innerHTML = "<h3>Select a repo:</h3><ul>" + repos.map(r =>
-    `<li>📦 <a href="#" onclick="openRepo('${r.name}')">${r.name}</a></li>`
-  ).join("") + "</ul>";
+  list.innerHTML = "<h3>Select a repo:</h3>";
+  const ul = document.createElement("ul");
+  repos.forEach(r => {
+    const li = document.createElement("li");
+    const link = document.createElement("a");
+    link.textContent = "📦 " + r.name;
+    link.addEventListener("click", () => openRepo(r.name));
+    li.appendChild(link);
+    ul.appendChild(li);
+  });
+  list.appendChild(ul);
 }
 
+// Open repo or folder
 async function openRepo(repo, path = "") {
   currentRepo = repo;
   currentPath = path;
   updateBreadcrumbs();
-  const url = `https://api.github.com/repos/${user}/${repo}/contents/${path}`;
-  const res = await fetch(url);
+
+  const res = await fetch(`https://api.github.com/repos/${user}/${repo}/contents/${path}`);
   const items = await res.json();
   const list = document.getElementById("repo-list");
-  if (Array.isArray(items)) {
-    let dirs = items.filter(i => i.type === "dir");
-    let files = items.filter(i => i.type === "file" && i.name !== "index.html");
+  list.innerHTML = `<h3>Browsing: ${repo}/${path}</h3>`;
 
-    // Build ZIP URL for current folder
-    let zipUrl = buildZipUrl(repo, path);
+  // "Go Back" button
+  const backBtn = document.createElement("button");
+  backBtn.textContent = "⬅ Go Back";
+  backBtn.addEventListener("click", goBack);
+  list.appendChild(backBtn);
 
-    list.innerHTML = `<h3>Browsing: ${repo}/${path}</h3>
-      <button onclick="goBack()">⬅ Go Back</button>
-      <p><a href="${zipUrl}">📦 Download This Folder as ZIP</a></p>
-      <ul>` + dirs.map(d =>
-        `<li>📂 <a href="#" onclick="openRepo('${repo}', '${path}${d.name}/')">${d.name}</a>
-             - <a href="${buildZipUrl(repo, path + d.name + "/")}">[ZIP]</a></li>`
-      ).join("") +
-      files.map(f =>
-        `<li>📄 <a href="#" onclick="openFile('${repo}', '${path}${f.name}')">${f.name}</a></li>`
-      ).join("") + "</ul>`;
-  }
+  // Folder ZIP download
+  const zipLink = document.createElement("p");
+  const zipA = document.createElement("a");
+  zipA.textContent = "📦 Download This Folder as ZIP";
+  zipA.href = buildZipUrl(repo, path);
+  zipA.target = "_blank";
+  zipLink.appendChild(zipA);
+  list.appendChild(zipLink);
+
+  // List items
+  const ul = document.createElement("ul");
+
+  // Directories
+  items.filter(i => i.type === "dir").forEach(d => {
+    const li = document.createElement("li");
+    li.textContent = "📂 " + d.name + " ";
+
+    const browse = document.createElement("a");
+    browse.textContent = "[Browse]";
+    browse.addEventListener("click", () => openRepo(repo, path + d.name + "/"));
+    li.appendChild(browse);
+
+    const zip = document.createElement("a");
+    zip.textContent = " [ZIP]";
+    zip.href = buildZipUrl(repo, path + d.name + "/");
+    zip.style.marginLeft = "5px";
+    zip.target = "_blank";
+    li.appendChild(zip);
+
+    ul.appendChild(li);
+  });
+
+  // Files
+  items.filter(i => i.type === "file" && i.name !== "index.html").forEach(f => {
+    const li = document.createElement("li");
+    const fileLink = document.createElement("a");
+    fileLink.textContent = "📄 " + f.name;
+    fileLink.addEventListener("click", () => openFile(repo, path + f.name));
+    li.appendChild(fileLink);
+    ul.appendChild(li);
+  });
+
+  list.appendChild(ul);
 }
 
+// Go up a folder
 function goBack() {
   if (!currentPath) {
     listRepos();
@@ -85,7 +123,7 @@ function goBack() {
   }
 }
 
-// Build download URL for a single file
+// Build download URL for files
 function buildDownloadUrl(repo, filepath) {
   if (repo === "55guh.github.io") {
     return `https://55guh.github.io/file/${filepath}`;
@@ -94,7 +132,7 @@ function buildDownloadUrl(repo, filepath) {
   }
 }
 
-// Build ZIP URL for repo or subdir
+// Build ZIP URL for repo or subdirectory
 function buildZipUrl(repo, path = "") {
   if (repo === "55guh.github.io") {
     return `https://55guh.github.io/file/${path.replace(/\/$/, "")}.zip`;
@@ -103,28 +141,49 @@ function buildZipUrl(repo, path = "") {
   }
 }
 
-async function openFile(repo, filepath) {
+// Trigger file download
+function openFile(repo, filepath) {
   const url = buildDownloadUrl(repo, filepath);
-
   const a = document.createElement("a");
   a.href = url;
-  a.download = filepath.split("/").pop(); // file name only
+  a.download = filepath.split("/").pop();
   document.body.appendChild(a);
   a.click();
   document.body.removeChild(a);
 }
 
+// Breadcrumbs
 function updateBreadcrumbs() {
-  let parts = currentPath.split("/").filter(p => p);
-  let crumbHTML = `<a href="#" onclick="listRepos()">Repos</a> / <a href="#" onclick="openRepo('${currentRepo}')">${currentRepo}</a>`;
+  const parts = currentPath.split("/").filter(p => p);
+  const crumbs = document.getElementById("breadcrumbs");
+  crumbs.innerHTML = "";
+
+  const root = document.createElement("a");
+  root.textContent = "Repos";
+  root.addEventListener("click", listRepos);
+  crumbs.appendChild(root);
+
+  const sep = document.createTextNode(" / ");
+  crumbs.appendChild(sep);
+
+  const repoLink = document.createElement("a");
+  repoLink.textContent = currentRepo;
+  repoLink.addEventListener("click", () => openRepo(currentRepo));
+  crumbs.appendChild(repoLink);
+
   let built = "";
-  parts.forEach((p, i) => {
+  parts.forEach(p => {
+    const sep2 = document.createTextNode(" / ");
+    crumbs.appendChild(sep2);
     built += p + "/";
-    crumbHTML += ` / <a href="#" onclick="openRepo('${currentRepo}', '${built}')">${p}</a>`;
+    const partLink = document.createElement("a");
+    partLink.textContent = p;
+    partLink.addEventListener("click", () => openRepo(currentRepo, built));
+    crumbs.appendChild(partLink);
   });
-  document.getElementById("breadcrumbs").innerHTML = crumbHTML;
 }
 
+// Initialize
 listRepos();
 </script>
 </body>
