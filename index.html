@@ -8,7 +8,7 @@
     body {
       font-family: 'Oswald', sans-serif;
       margin: 0;
-      padding: 0;
+      padding: 20px;
       background: #111;
       color: #eee;
     }
@@ -34,6 +34,18 @@
       display: none;
       color: #ffcc00;
     }
+    button {
+      margin: 5px 5px 5px 0;
+      padding: 5px 10px;
+      cursor: pointer;
+    }
+    ul {
+      list-style: none;
+      padding-left: 0;
+    }
+    li {
+      margin: 6px 0;
+    }
   </style>
 </head>
 <body>
@@ -50,7 +62,7 @@
       list.innerHTML = `<h2>Repos</h2><ul id="repoList"></ul>`;
       const ul = document.getElementById("repoList");
 
-      // Add "main" repo manually
+      // main repo
       const liMain = document.createElement("li");
       const aMain = document.createElement("a");
       aMain.href = "#";
@@ -59,12 +71,12 @@
       liMain.appendChild(aMain);
       ul.appendChild(liMain);
 
-      // Fetch other repos
+      // other repos
       const res = await fetch("https://api.github.com/users/55guh/repos");
       const repos = await res.json();
 
       repos.forEach(repo => {
-        if (repo.name === "55guh.github.io") return; // skip main repo duplicate
+        if (repo.name === "55guh.github.io") return; // skip main duplicate
         const li = document.createElement("li");
         const a = document.createElement("a");
         a.href = "#";
@@ -85,28 +97,26 @@
       root.onclick = e => { e.preventDefault(); listRepos(); };
       crumbs.appendChild(root);
 
-      if (path || repo) {
+      if (repo) {
         crumbs.appendChild(document.createTextNode(" / "));
-
         const repoLink = document.createElement("a");
         repoLink.href = "#";
         repoLink.textContent = repo;
         repoLink.onclick = e => { e.preventDefault(); openRepo(repo, ""); };
         crumbs.appendChild(repoLink);
+      }
 
-        if (path) {
-          const parts = path.split("/").filter(Boolean);
-          let currentPath = "";
-          parts.forEach((part, i) => {
-            crumbs.appendChild(document.createTextNode(" / "));
-            const partLink = document.createElement("a");
-            partLink.href = "#";
-            currentPath += part + "/";
-            partLink.textContent = part;
-            partLink.onclick = e => { e.preventDefault(); openRepo(repo, currentPath); };
-            crumbs.appendChild(partLink);
-          });
-        }
+      if (path) {
+        let cumulative = "";
+        path.split("/").filter(Boolean).forEach((part) => {
+          cumulative += part + "/";
+          crumbs.appendChild(document.createTextNode(" / "));
+          const partLink = document.createElement("a");
+          partLink.href = "#";
+          partLink.textContent = part;
+          partLink.onclick = e => { e.preventDefault(); openRepo(repo, cumulative); };
+          crumbs.appendChild(partLink);
+        });
       }
 
       return crumbs;
@@ -114,20 +124,15 @@
 
     async function openRepo(repo, path = "") {
       historyStack.push({ repo, path });
-
       const list = document.getElementById("fileList");
       list.innerHTML = "";
-
-      // breadcrumbs
       list.appendChild(updateBreadcrumbs(repo, path));
 
-      // progress bar
       const progress = document.createElement("div");
       progress.id = "progress";
       progress.textContent = "Preparing ZIP, please wait...";
       list.appendChild(progress);
 
-      // main controls
       const controls = document.createElement("p");
       const backBtn = document.createElement("button");
       backBtn.textContent = "⬅ Go Back";
@@ -139,7 +144,6 @@
       zipBtn.style.marginLeft = "10px";
       zipBtn.onclick = () => downloadFolderAsZip(repo, path);
       controls.appendChild(zipBtn);
-
       list.appendChild(controls);
 
       const ul = document.createElement("ul");
@@ -152,7 +156,7 @@
       }
       const data = await res.json();
 
-      // add dirs
+      // directories
       data.filter(item => item.type === "dir").forEach(d => {
         const li = document.createElement("li");
         li.textContent = "📂 " + d.name;
@@ -173,13 +177,17 @@
         ul.appendChild(li);
       });
 
-      // add files
+      // files (GitHub Pages links)
       data.filter(item => item.type === "file").forEach(f => {
         const li = document.createElement("li");
         li.textContent = "📄 " + f.name;
 
         const open = document.createElement("a");
-        open.href = f.download_url;
+        if (repo === "main") {
+          open.href = `https://55guh.github.io/file/${path}${f.name}`;
+        } else {
+          open.href = `https://55guh.github.io/${repo}/${path}${f.name}`;
+        }
         open.textContent = " [Download]";
         open.setAttribute("download", f.name);
 
@@ -235,7 +243,6 @@
       }
     }
 
-    // load repo list on start
     listRepos();
   </script>
 </body>
