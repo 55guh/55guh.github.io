@@ -1,425 +1,259 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="utf-8">
-<title>55Guh</title>
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<link href="https://fonts.googleapis.com/css2?family=Oswald:wght@700&display=swap" rel="stylesheet">
-<style>
-  :root{
-    --bg:#f2f4f7; --ink:#1f2937; --muted:#6b7280; --link:#0b66d6; --card:#ffffff; --border:#e5e7eb;
-  }
-  *{box-sizing:border-box}
-  body{
-    margin:0; background:var(--bg); color:var(--ink);
-    font-family:'Oswald', sans-serif; font-weight:700;
-  }
-  .wrap{max-width:980px; margin:0 auto; padding:18px 16px 40px}
-  /* Header block like your screenshot */
-  .title{font-size:44px; line-height:1; margin:0 0 6px}
-  .date{color:var(--muted); font-size:22px; margin-bottom:18px}
-  .section{font-size:26px; margin:18px 0 8px}
-  /* Layout: list + (optional) right panel */
-  .grid{display:grid; grid-template-columns:1fr; gap:18px}
-  .grid.has-panel{grid-template-columns:1.2fr 1fr}
-  .card{background:var(--card); border:1px solid var(--border); border-radius:10px; padding:14px}
-  /* Repo / file list look */
-  .list a{display:block; color:var(--link); text-decoration:none; padding:6px 6px 6px 0}
-  .list a:hover{text-decoration:underline}
-  .row{display:flex; align-items:center; gap:10px; border-bottom:1px dashed var(--border); padding:6px 0}
-  .row:last-child{border-bottom:0}
-  .icon{width:1.2em; text-align:center}
-  /* Breadcrumbs */
-  .crumbs{font-size:16px; margin-top:4px; margin-bottom:10px}
-  .crumbs a{color:var(--link); text-decoration:none}
-  .crumbs a:hover{text-decoration:underline}
-  .sep{margin:0 6px; color:var(--muted)}
-  /* Search bar */
-  .tools{display:flex; gap:8px; margin:8px 0 12px}
-  .tools input{flex:1; border:1px solid var(--border); border-radius:8px; padding:7px 10px; font:inherit}
-  .btn{border:1px solid var(--border); background:#fff; border-radius:8px; padding:7px 10px; cursor:pointer; font:inherit}
-  /* Viewer panel */
-  .panel-title{font-size:20px; margin:0 0 10px}
-  .viewer{min-height:240px}
-  .viewer pre{
-    white-space:pre-wrap; word-break:break-word; background:#fbfbfb; border:1px solid var(--border);
-    border-radius:8px; padding:10px; font-family:ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-weight:600;
-  }
-  .viewer img{max-width:100%; display:block; margin:auto}
-  canvas{max-width:100%; display:block; margin:10px auto; background:#111; border-radius:8px}
-  .sliders{display:grid; gap:8px; grid-template-columns:1fr 1fr}
-  .sliders label{display:flex; align-items:center; gap:8px; color:var(--muted); font-size:14px}
-  .sliders input[type="range"]{flex:1}
-  .panel-actions{display:flex; gap:8px; flex-wrap:wrap; margin-top:10px}
-  .note{color:var(--muted); font-size:14px}
-  @media (max-width: 960px){ .grid.has-panel{grid-template-columns:1fr} }
-  noscript{display:block; background:#fff3cd; color:#7a5d00; border:1px solid #ffe69c; padding:10px; border-radius:8px; margin:10px 0}
-</style>
+  <meta charset="UTF-8">
+  <title>55Guh</title>
+  <link href="https://fonts.googleapis.com/css2?family=Oswald:wght@700&display=swap" rel="stylesheet">
+  <style>
+    body {
+      font-family: 'Oswald', sans-serif;
+      margin: 20px;
+      background: #f5f5f5;
+      color: #222;
+    }
+    h1 {
+      font-size: 32px;
+    }
+    .repo-list {
+      margin-top: 20px;
+    }
+    .repo-list li {
+      list-style: none;
+      margin: 8px 0;
+    }
+    .repo-list li a {
+      text-decoration: none;
+      color: #0366d6;
+      font-size: 18px;
+    }
+    .breadcrumbs {
+      margin: 15px 0;
+      font-size: 14px;
+    }
+    .breadcrumbs span {
+      margin-right: 5px;
+    }
+    .search-bar {
+      margin: 15px 0;
+    }
+    .search-bar input {
+      padding: 5px;
+      width: 250px;
+    }
+    .search-bar button {
+      padding: 6px 10px;
+      margin-left: 5px;
+    }
+    .file-list {
+      margin-top: 10px;
+    }
+    .file-list li {
+      list-style: none;
+      margin: 6px 0;
+    }
+    .file-list li a {
+      text-decoration: none;
+      color: #0366d6;
+    }
+    #viewer {
+      margin-top: 20px;
+      padding: 10px;
+      border: 1px solid #ccc;
+      background: #fff;
+    }
+    #editor-container {
+      display: none;
+      margin-top: 20px;
+    }
+    #editor-tools {
+      margin-bottom: 10px;
+    }
+    canvas {
+      border: 1px solid #666;
+      display: block;
+      margin-bottom: 10px;
+      max-width: 100%;
+    }
+    .go-back {
+      margin: 10px 0;
+      display: inline-block;
+      padding: 6px 12px;
+      background: #0366d6;
+      color: white;
+      border-radius: 4px;
+      cursor: pointer;
+      text-decoration: none;
+    }
+  </style>
 </head>
 <body>
-<noscript>JavaScript is required for browsing and editing. Please enable it.</noscript>
-<div class="wrap">
-  <h1 class="title">55Guh</h1>
-  <div class="date" id="date"></div>
+  <h1>55Guh</h1>
+  <div id="date"></div>
 
-  <!-- breadcrumbs -->
-  <div class="crumbs" id="breadcrumbs" aria-label="Breadcrumbs"></div>
-
-  <!-- search tools -->
-  <div class="tools">
-    <input id="search" placeholder="Search in this folder (* = wildcard)">
-    <button class="btn" id="searchGo">Enter</button>
-    <button class="btn" id="searchClear">Clear</button>
+  <div class="search-bar">
+    <input id="search" type="text" placeholder="Search (* = wildcard)">
+    <button onclick="doSearch()">Enter</button>
+    <button onclick="clearSearch()">Clear</button>
   </div>
 
-  <div id="layout" class="grid">
-    <!-- left side: repos / files -->
-    <section class="card">
-      <div id="listTitle" class="section">Select a repo:</div>
-      <div id="list" class="list" role="list"></div>
-    </section>
+  <div class="breadcrumbs" id="breadcrumbs"></div>
+  <a class="go-back" onclick="goBack()">⬅ Go Back</a>
 
-    <!-- right side: appears only when opening an image/text -->
-    <aside id="panel" class="card" style="display:none">
-      <div class="panel-title" id="panelTitle">Preview</div>
-      <div class="viewer" id="viewer"></div>
+  <ul class="repo-list" id="repoList"></ul>
+  <ul class="file-list" id="fileList"></ul>
 
-      <!-- Image editor controls (only shown for images) -->
-      <div id="imgControls" style="display:none">
-        <div class="sliders">
-          <label>Brightness <input type="range" id="br" min="-100" max="100" value="0"></label>
-          <label>Contrast  <input type="range" id="ct" min="-100" max="100" value="0"></label>
-          <label>Hue       <input type="range" id="hu" min="-180" max="180" value="0"></label>
-          <label>Saturation<input type="range" id="sa" min="-100" max="100" value="0"></label>
-          <label>Value     <input type="range" id="va" min="-100" max="100" value="0"></label>
-          <label>Swirl     <input type="range" id="sw" min="0" max="200" value="0"></label>
-        </div>
-        <div class="panel-actions">
-          <button class="btn" id="resetImg">Reset</button>
-          <button class="btn" id="downloadImg">Download edited PNG</button>
-          <span class="note">Adjust sliders; “Value” boosts overall lightness.</span>
-        </div>
-        <canvas id="canvas"></canvas>
-      </div>
-    </aside>
+  <div id="viewer"></div>
+
+  <div id="editor-container">
+    <div id="editor-tools">
+      <label>Brightness: <input type="range" min="-100" max="100" value="0" id="brightness"></label>
+      <label>Contrast: <input type="range" min="-100" max="100" value="0" id="contrast"></label>
+      <label>Hue: <input type="range" min="0" max="360" value="0" id="hue"></label>
+      <label>Saturation: <input type="range" min="0" max="200" value="100" id="saturation"></label>
+      <label>Value: <input type="range" min="0" max="200" value="100" id="value"></label>
+      <button onclick="downloadImage()">Download</button>
+      <button onclick="closeEditor()">Close Editor</button>
+    </div>
+    <canvas id="editorCanvas"></canvas>
   </div>
-</div>
 
-<script>
-/* ====== Date like “August 18th, 2025” ====== */
-(function(){
-  const d = new Date();
-  const months = ["January","February","March","April","May","June","July","August","September","October","November","December"];
-  const day = d.getDate();
-  const s = (n)=> (n%10===1&&n!==11)?"st":(n%10===2&&n!==12)?"nd":(n%10===3&&n!==13)?"rd":"th";
-  document.getElementById('date').textContent = `${months[d.getMonth()]} ${day}${s(day)}, ${d.getFullYear()}`;
-})();
+  <script>
+    const repos = ["55guh.github.io","etc","underwhere"];
+    let currentRepo = null;
+    let currentPath = [];
 
-/* ====== State ====== */
-const owner = "55guh";
-let currentRepo = null;        // null => show repo list
-let currentPath = "";          // folder inside repo
-let listData = [];             // files fetched for current folder
-
-/* ====== Helpers ====== */
-function pagesURL(repo, path, name){
-  const base = (repo === "55guh.github.io") ? "https://55guh.github.io" : `https://55guh.github.io/${repo}`;
-  const p = path ? `/${path}` : "";
-  return `${base}${p}/${encodeURIComponent(name)}`;
-}
-function setHash(){
-  const q = new URLSearchParams();
-  if (currentRepo) q.set("repo", currentRepo);
-  if (currentPath) q.set("path", currentPath);
-  location.hash = q.toString();
-}
-function parseHash(){
-  const q = new URLSearchParams(location.hash.slice(1));
-  return { repo: q.get("repo"), path: q.get("path") || "" };
-}
-function iconFor(item){
-  if (item.type === "dir") return "📦";
-  return "📄";
-}
-function isTextName(name){
-  return /\.(txt|md|json|csv|xml|yml|yaml|html?|css|js|ts|py|java|cs|cpp|c|rs|go|rb|php|sh|bat|ps1|ini|toml|cfg|conf)$/i.test(name);
-}
-function isImageName(name){
-  return /\.(png|jpg|jpeg|gif|bmp|webp|avif|svg)$/i.test(name);
-}
-
-/* ====== UI Pieces ====== */
-const listEl = document.getElementById('list');
-const listTitleEl = document.getElementById('listTitle');
-const crumbsEl = document.getElementById('breadcrumbs');
-const layoutEl = document.getElementById('layout');
-const panelEl = document.getElementById('panel');
-const viewerEl = document.getElementById('viewer');
-const panelTitleEl = document.getElementById('panelTitle');
-const imgControls = document.getElementById('imgControls');
-
-/* ====== Render breadcrumbs ====== */
-function renderCrumbs(){
-  if (!currentRepo){
-    crumbsEl.innerHTML = ""; return;
-  }
-  const parts = currentPath.split('/').filter(Boolean);
-  const items = [];
-  items.push(`<a href="#" onclick="openRepo('${currentRepo}');return false;">${currentRepo}</a>`);
-  let acc = "";
-  parts.forEach((seg)=>{
-    acc = acc ? `${acc}/${seg}` : seg;
-    items.push(`<a href="#" onclick="openPath('${acc}');return false;">${seg}</a>`);
-  });
-  crumbsEl.innerHTML = items.join(`<span class="sep">/</span>`);
-}
-
-/* ====== Load repos or a folder ====== */
-async function loadRepos(){
-  currentRepo = null; currentPath = ""; setHash(); renderCrumbs();
-  listTitleEl.textContent = "Select a repo:";
-  listEl.innerHTML = `<div class="row"><div class="icon">⏳</div><div>Loading…</div></div>`;
-  try{
-    const res = await fetch(`https://api.github.com/users/${owner}/repos?per_page=100&sort=full_name`);
-    const repos = await res.json();
-    repos.sort((a,b)=>a.name.localeCompare(b.name));
-    listEl.innerHTML = repos.map(r=>(
-      `<div class="row">
-         <div class="icon">📦</div>
-         <div><a href="#" onclick="openRepo('${r.name}');return false;">${r.name}</a></div>
-       </div>`
-    )).join("");
-  }catch(e){
-    listEl.innerHTML = `<div class="row"><div class="icon">❌</div><div>Failed to load repos.</div></div>`;
-  }
-  hidePanel();
-}
-
-async function loadPath(repo, path=""){
-  listTitleEl.textContent = repo + (path ? ` / ${path}` : "");
-  renderCrumbs();
-  listEl.innerHTML = `<div class="row"><div class="icon">⏳</div><div>Loading…</div></div>`;
-  try{
-    const url = `https://api.github.com/repos/${owner}/${repo}/contents/${path}`;
-    const res = await fetch(url);
-    if (!res.ok){ throw new Error("fetch failed"); }
-    let files = await res.json();
-    // Exclude index.html only in main site
-    if (repo === "55guh.github.io"){
-      files = files.filter(x => x.name.toLowerCase() !== "index.html");
+    function loadRepos() {
+      const list = document.getElementById("repoList");
+      list.innerHTML = "<b>Select a repo:</b>";
+      repos.forEach(r => {
+        const li = document.createElement("li");
+        li.innerHTML = "📦 <a href='#' onclick='openRepo(\""+r+"\")'>"+r+"</a>";
+        list.appendChild(li);
+      });
     }
-    // Folders first, then name
-    files.sort((a,b)=> (a.type===b.type) ? a.name.localeCompare(b.name) : (a.type==="dir" ? -1 : 1));
-    listData = files;
-    drawList(files);
-  }catch(e){
-    listEl.innerHTML = `<div class="row"><div class="icon">❌</div><div>Could not load folder.</div></div>`;
-  }
-  hidePanel();
-}
 
-/* ====== Draw list (after search/filter) ====== */
-function drawList(files){
-  listEl.innerHTML = files.map(f=>{
-    const isDir = f.type === "dir";
-    const href = `#`; // handled by JS
-    const click = isDir
-      ? `openPath('${currentPath ? currentPath + '/' : ''}${f.name}')`
-      : `openFile('${f.name}', '${f.download_url}', '${f.sha}')`;
-    return `<div class="row">
-      <div class="icon">${iconFor(f)}</div>
-      <div><a href="${href}" onclick="${click};return false;">${f.name}</a></div>
-    </div>`;
-  }).join("");
-}
-
-/* ====== Openers ====== */
-function openRepo(repo){ currentRepo = repo; currentPath = ""; setHash(); loadPath(repo, ""); }
-function openPath(path){ currentPath = path; setHash(); loadPath(currentRepo, currentPath); }
-
-/* ====== Search (wildcard * in current folder) ====== */
-const qEl = document.getElementById('search');
-document.getElementById('searchGo').onclick = runSearch;
-document.getElementById('searchClear').onclick = ()=>{ qEl.value=""; drawList(listData); };
-
-qEl.addEventListener('keydown', e=>{
-  if (e.key === "Enter") runSearch();
-  if (e.key === "Backspace") e.stopPropagation(); // avoid folder back
-});
-
-function runSearch(){
-  const raw = qEl.value.trim().toLowerCase();
-  if (!raw || raw === "*"){ drawList(listData); return; }
-  // convert wildcard pattern to RegExp
-  const pattern = "^" + raw.split("*").map(s=>s.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')).join(".*") + "$";
-  const re = new RegExp(pattern);
-  drawList(listData.filter(f=> f.name.toLowerCase().match(re)));
-}
-
-/* ====== File open (text only OR image editor) ====== */
-function hidePanel(){
-  panelEl.style.display = "none";
-  layoutEl.classList.remove('has-panel');
-  viewerEl.innerHTML = "";
-  imgControls.style.display = "none";
-}
-async function openFile(name, downloadUrl, sha){
-  panelEl.style.display = "block";
-  layoutEl.classList.add('has-panel');
-  panelTitleEl.textContent = `${currentRepo}/${currentPath ? currentPath+'/' : ''}${name}`;
-  viewerEl.innerHTML = "";
-
-  const pages = pagesURL(currentRepo, currentPath, name);
-
-  if (isImageName(name)){
-    // show image + editor
-    viewerEl.innerHTML = `<img alt="" src="${pages}">`;
-    setupImageEditor(pages);
-  }else if (isTextName(name)){
-    try{
-      const res = await fetch(downloadUrl);
-      const text = await res.text();
-      viewerEl.innerHTML = `<pre>${escapeHtml(text)}</pre>`;
-      imgControls.style.display = "none";
-    }catch(e){
-      viewerEl.innerHTML = `<div class="note">Failed to load text.</div>`;
-      imgControls.style.display = "none";
+    function openRepo(repo) {
+      currentRepo = repo;
+      currentPath = [];
+      loadDir();
     }
-  }else{
-    // binary blocked
-    viewerEl.innerHTML = `<div class="note">Binary preview blocked. Download from: <a href="${pages}" target="_blank" rel="noopener">${name}</a></div>`;
-    imgControls.style.display = "none";
-  }
-}
 
-/* ====== Image editor (canvas filters + swirl) ====== */
-const canvas = document.getElementById('canvas');
-const ctx = canvas.getContext('2d');
-let baseImg = null;     // original Image()
-let baseBitmap = null;  // ImageBitmap used for redraw
-let originalPixels = null; // Uint8ClampedArray
-let W=0,H=0;
+    function loadDir() {
+      updateBreadcrumbs();
+      document.getElementById("repoList").style.display="none";
+      const list = document.getElementById("fileList");
+      list.innerHTML = "";
 
-function setupImageEditor(src){
-  imgControls.style.display = "block";
-  // reset sliders
-  ['br','ct','hu','sa','va','sw'].forEach(id=> document.getElementById(id).value = id==='sw' ? 0 : 0);
-  // load image
-  const img = new Image(); img.crossOrigin="anonymous"; img.src = src;
-  img.onload = async ()=>{
-    baseImg = img;
-    W = canvas.width = img.naturalWidth;
-    H = canvas.height = img.naturalHeight;
-    ctx.drawImage(img, 0, 0, W, H);
-    // capture original pixels
-    originalPixels = ctx.getImageData(0,0,W,H);
-    baseBitmap = await createImageBitmap(img);
-    drawWithFilters(); // initial
-  };
-  // hook sliders
-  ['br','ct','hu','sa','va','sw'].forEach(id=>{
-    document.getElementById(id).oninput = drawWithFilters;
-  });
-  document.getElementById('resetImg').onclick = ()=>{
-    ['br','ct','hu','sa','va','sw'].forEach(id=> document.getElementById(id).value = id==='sw' ? 0 : 0);
-    drawWithFilters();
-  };
-  document.getElementById('downloadImg').onclick = ()=>{
-    const a = document.createElement('a');
-    a.download = 'edited.png';
-    a.href = canvas.toDataURL('image/png');
-    a.click();
-  };
-}
+      fetch(`https://api.github.com/repos/55guh/${currentRepo}/contents/${currentPath.join("/")}`)
+        .then(r=>r.json()).then(data=>{
+          let dirs = data.filter(f=>f.type==="dir");
+          let files = data.filter(f=>f.type==="file");
+          dirs.forEach(d=>{
+            const li=document.createElement("li");
+            li.innerHTML="📂 <a href='#' onclick='enterDir(\""+d.name+"\")'>"+d.name+"</a>";
+            list.appendChild(li);
+          });
+          files.forEach(f=>{
+            const li=document.createElement("li");
+            li.innerHTML="📄 <a href='#' onclick='viewFile(\""+f.name+"\",\""+f.download_url+"\")'>"+f.name+"</a>";
+            list.appendChild(li);
+          });
+        });
+    }
 
-function drawWithFilters(){
-  if (!baseBitmap) return;
-  // First apply CSS-like filters for performance when there is no swirl,
-  // then if swirl != 0 we do a pixel warp pass.
-  const br = parseInt(document.getElementById('br').value,10) || 0;  // -100..100 (%)
-  const ct = parseInt(document.getElementById('ct').value,10) || 0;  // -100..100 (%)
-  const hu = parseInt(document.getElementById('hu').value,10) || 0;  // -180..180 (deg)
-  const sa = parseInt(document.getElementById('sa').value,10) || 0;  // -100..100 (%)
-  const va = parseInt(document.getElementById('va').value,10) || 0;  // -100..100 (%)
-  const sw = parseInt(document.getElementById('sw').value,10) || 0;  // 0..200 (strength)
+    function enterDir(name){
+      currentPath.push(name);
+      loadDir();
+    }
 
-  // 1) fast filter pass via ctx.filter (brightness/contrast/saturate/hue-rotate)
-  ctx.save();
-  const cssBrightness = 100 + br + va; // Value acts like extra brightness
-  const cssContrast = 100 + ct;
-  const cssSaturate = 100 + sa;
-  ctx.filter = `brightness(${cssBrightness}%) contrast(${cssContrast}%) saturate(${cssSaturate}%) hue-rotate(${hu}deg)`;
-  ctx.clearRect(0,0,W,H);
-  ctx.drawImage(baseBitmap, 0, 0, W, H);
-  ctx.restore();
-
-  if (sw === 0) return;
-
-  // 2) swirl warp pass (CPU)
-  const src = ctx.getImageData(0,0,W,H);
-  const dst = ctx.createImageData(W,H);
-  const cx = W/2, cy = H/2;
-  const maxR = Math.hypot(cx, cy);
-  const k = sw / 600; // swirl coefficient (smaller -> subtler)
-  for (let y=0; y<H; y++){
-    for (let x=0; x<W; x++){
-      const dx = x - cx;
-      const dy = y - cy;
-      const r = Math.hypot(dx, dy) / maxR;     // 0..1
-      const angle = k * (1 - r) * (1 - r) * Math.PI * 2; // stronger near center
-      const s = Math.sin(angle), c = Math.cos(angle);
-      const sx = Math.round( cx + (dx*c - dy*s) );
-      const sy = Math.round( cy + (dx*s + dy*c) );
-      const di = (y*W + x)*4;
-      if (sx>=0 && sx<W && sy>=0 && sy<H){
-        const si = (sy*W + sx)*4;
-        dst.data[di]   = src.data[si];
-        dst.data[di+1] = src.data[si+1];
-        dst.data[di+2] = src.data[si+2];
-        dst.data[di+3] = src.data[si+3];
-      }else{
-        dst.data[di+3] = 0; // transparent out-of-bounds
+    function goBack(){
+      if(currentPath.length>0){
+        currentPath.pop();
+        loadDir();
+      } else {
+        document.getElementById("fileList").innerHTML="";
+        document.getElementById("repoList").style.display="block";
+        document.getElementById("breadcrumbs").innerHTML="";
       }
     }
-  }
-  ctx.putImageData(dst,0,0);
-}
 
-function escapeHtml(s){
-  return s.replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
-}
-
-/* ====== Keyboard: Backspace goes up IF not in search ====== */
-document.addEventListener('keydown', (e)=>{
-  if (document.activeElement === qEl) return;
-  if (e.key === 'Backspace' && currentRepo){
-    e.preventDefault();
-    if (currentPath){
-      const up = currentPath.split('/').slice(0,-1).join('/');
-      openPath(up);
-    }else{
-      loadRepos();
+    function updateBreadcrumbs(){
+      const bc = document.getElementById("breadcrumbs");
+      let path = currentPath.join("/");
+      bc.innerHTML = `<span>${currentRepo}</span> / <span>${path || ""}</span>`;
     }
-  }
-});
 
-/* ====== Router (hash) ====== */
-window.addEventListener('hashchange', ()=>{
-  const h = parseHash();
-  if (h.repo){
-    currentRepo = h.repo; currentPath = h.path || "";
-    loadPath(currentRepo, currentPath);
-  }else{
+    function viewFile(name,url){
+      const viewer=document.getElementById("viewer");
+      viewer.innerHTML="";
+
+      if(name.match(/\.(png|jpg|jpeg|gif)$/i)){
+        const img=document.createElement("img");
+        img.src=url;
+        img.onload=()=>openEditor(img);
+        viewer.appendChild(img);
+      } else if(name.match(/\.(txt|md|html|css|js)$/i)){
+        fetch(url).then(r=>r.text()).then(t=>{
+          viewer.innerHTML="<pre>"+escapeHtml(t)+"</pre>";
+        });
+      } else if(name.match(/\.(mp4|webm|ogg)$/i)){
+        viewer.innerHTML=`<video controls src="${url}" width="600"></video>`;
+      } else {
+        viewer.innerHTML="Binary or unsupported file.";
+      }
+    }
+
+    function escapeHtml(text){
+      return text.replace(/[&<>"']/g,m=>{
+        return {"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#039;"}[m];
+      });
+    }
+
+    function openEditor(img){
+      const canvas=document.getElementById("editorCanvas");
+      const ctx=canvas.getContext("2d");
+      canvas.width=img.width;
+      canvas.height=img.height;
+      ctx.drawImage(img,0,0);
+      document.getElementById("editor-container").style.display="block";
+    }
+
+    function closeEditor(){
+      document.getElementById("editor-container").style.display="none";
+    }
+
+    function downloadImage(){
+      const canvas=document.getElementById("editorCanvas");
+      const link=document.createElement("a");
+      link.download="edited.png";
+      link.href=canvas.toDataURL();
+      link.click();
+    }
+
+    function doSearch(){
+      const query=document.getElementById("search").value.toLowerCase();
+      if(!query) return;
+      const items=[...document.querySelectorAll("#fileList li, #repoList li")];
+      items.forEach(li=>{
+        const txt=li.innerText.toLowerCase();
+        li.style.display=txt.includes(query.replace("*",""))?"block":"none";
+      });
+    }
+    function clearSearch(){
+      document.getElementById("search").value="";
+      const items=[...document.querySelectorAll("#fileList li, #repoList li")];
+      items.forEach(li=>li.style.display="block");
+    }
+
+    function updateDate(){
+      const d=new Date();
+      const opts={month:"long",day:"numeric",year:"numeric"};
+      const formatted=d.toLocaleDateString("en-US",opts);
+      document.getElementById("date").innerText=formatted;
+    }
+
+    updateDate();
     loadRepos();
-  }
-});
-
-/* ====== Boot ====== */
-(function init(){
-  const h = parseHash();
-  if (h.repo){ currentRepo = h.repo; currentPath = h.path || ""; loadPath(currentRepo, currentPath); }
-  else { loadRepos(); }
-})();
-</script>
+  </script>
 </body>
 </html>
