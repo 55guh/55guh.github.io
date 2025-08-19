@@ -7,177 +7,89 @@
   <style>
     body {
       font-family: 'Oswald', sans-serif;
-      margin: 0;
-      padding: 20px;
       background: #111;
-      color: #eee;
+      color: #fff;
+      margin: 0;
+      padding: 0;
     }
-    #fileList {
-      padding: 20px;
+    #repos, #files {
+      padding: 10px;
     }
     a {
-      color: #4fa3ff;
+      color: #0af;
       text-decoration: none;
     }
     a:hover {
       text-decoration: underline;
     }
-    #breadcrumbs {
-      margin-bottom: 15px;
-    }
-    #breadcrumbs a {
-      color: #ffcc00;
-      margin-right: 5px;
-    }
-    #progress {
-      margin: 10px 0;
-      display: none;
-      color: #ffcc00;
-    }
-    button {
-      margin: 5px 5px 5px 0;
-      padding: 5px 10px;
-      cursor: pointer;
-    }
-    ul {
-      list-style: none;
-      padding-left: 0;
-    }
-    li {
-      margin: 6px 0;
-    }
   </style>
 </head>
 <body>
-  <div id="fileList"></div>
-
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
+  <h1>55Guh</h1>
+  <div id="repos"></div>
+  <div id="files"></div>
 
   <script>
-    const historyStack = [];
+    const user = "55guh";
 
     async function listRepos() {
-      const list = document.getElementById("fileList");
-      list.innerHTML = `<h2>Repos</h2><ul id="repoList"></ul>`;
-      const ul = document.getElementById("repoList");
-
-      // main repo
-      const liMain = document.createElement("li");
-      const aMain = document.createElement("a");
-      aMain.href = "#";
-      aMain.textContent = "main";
-      aMain.onclick = e => { e.preventDefault(); openRepo("main", ""); };
-      liMain.appendChild(aMain);
-      ul.appendChild(liMain);
-
-      // other repos
-      const res = await fetch("https://api.github.com/users/55guh/repos");
+      const res = await fetch(`https://api.github.com/users/${user}/repos`);
       const repos = await res.json();
+      const reposDiv = document.getElementById("repos");
+
+      const ul = document.createElement("ul");
+
+      // Add main manually so we can control it
+      const mainLi = document.createElement("li");
+      const mainLink = document.createElement("a");
+      mainLink.href = "#";
+      mainLink.textContent = "main";
+      mainLink.onclick = () => listFiles("main", "");
+      mainLi.appendChild(mainLink);
+      ul.appendChild(mainLi);
 
       repos.forEach(repo => {
-        if (repo.name === "55guh.github.io") return; // skip main duplicate
+        if (repo.name === `${user}.github.io`) return; // skip pages repo
         const li = document.createElement("li");
         const a = document.createElement("a");
         a.href = "#";
         a.textContent = repo.name;
-        a.onclick = e => { e.preventDefault(); openRepo(repo.name, ""); };
+        a.onclick = () => listFiles(repo.name, "");
         li.appendChild(a);
         ul.appendChild(li);
       });
+
+      reposDiv.innerHTML = "<h2>Repositories</h2>";
+      reposDiv.appendChild(ul);
     }
 
-    function updateBreadcrumbs(repo, path) {
-      const crumbs = document.createElement("div");
-      crumbs.id = "breadcrumbs";
-
-      const root = document.createElement("a");
-      root.href = "#";
-      root.textContent = "55Guh";
-      root.onclick = e => { e.preventDefault(); listRepos(); };
-      crumbs.appendChild(root);
-
-      if (repo) {
-        crumbs.appendChild(document.createTextNode(" / "));
-        const repoLink = document.createElement("a");
-        repoLink.href = "#";
-        repoLink.textContent = repo;
-        repoLink.onclick = e => { e.preventDefault(); openRepo(repo, ""); };
-        crumbs.appendChild(repoLink);
+    async function listFiles(repo, path) {
+      let apiURL;
+      if (repo === "main") {
+        apiURL = `https://api.github.com/repos/${user}/${user}.github.io/contents/file/${path}`;
+      } else {
+        apiURL = `https://api.github.com/repos/${user}/${repo}/contents/${path}`;
       }
 
-      if (path) {
-        let cumulative = "";
-        path.split("/").filter(Boolean).forEach((part) => {
-          cumulative += part + "/";
-          crumbs.appendChild(document.createTextNode(" / "));
-          const partLink = document.createElement("a");
-          partLink.href = "#";
-          partLink.textContent = part;
-          partLink.onclick = e => { e.preventDefault(); openRepo(repo, cumulative); };
-          crumbs.appendChild(partLink);
-        });
-      }
-
-      return crumbs;
-    }
-
-    async function openRepo(repo, path = "") {
-      historyStack.push({ repo, path });
-      const list = document.getElementById("fileList");
-      list.innerHTML = "";
-      list.appendChild(updateBreadcrumbs(repo, path));
-
-      const progress = document.createElement("div");
-      progress.id = "progress";
-      progress.textContent = "Preparing ZIP, please wait...";
-      list.appendChild(progress);
-
-      const controls = document.createElement("p");
-      const backBtn = document.createElement("button");
-      backBtn.textContent = "⬅ Go Back";
-      backBtn.onclick = () => goBack();
-      controls.appendChild(backBtn);
-
-      const zipBtn = document.createElement("button");
-      zipBtn.textContent = "📦 Download This Folder as ZIP";
-      zipBtn.style.marginLeft = "10px";
-      zipBtn.onclick = () => downloadFolderAsZip(repo, path);
-      controls.appendChild(zipBtn);
-      list.appendChild(controls);
+      const res = await fetch(apiURL);
+      const data = await res.json();
+      const filesDiv = document.getElementById("files");
 
       const ul = document.createElement("ul");
-      list.appendChild(ul);
 
-      const res = await fetch(getApiUrl(repo, path));
-      if (!res.ok) {
-        ul.innerHTML = `<li>❌ Failed to load</li>`;
-        return;
-      }
-      const data = await res.json();
-
-      // directories
+      // add dirs
       data.filter(item => item.type === "dir").forEach(d => {
         const li = document.createElement("li");
-        li.textContent = "📂 " + d.name;
+        const a = document.createElement("a");
+        a.href = "#";
+        a.textContent = "📁 " + d.name;
+        a.onclick = () => listFiles(repo, path + d.name + "/");
 
-        const browse = document.createElement("a");
-        browse.href = "#";
-        browse.textContent = " [Browse]";
-        browse.onclick = e => { e.preventDefault(); openRepo(repo, path + d.name + "/"); };
-
-        const zip = document.createElement("a");
-        zip.href = "#";
-        zip.textContent = " [ZIP]";
-        zip.style.marginLeft = "5px";
-        zip.onclick = e => { e.preventDefault(); downloadFolderAsZip(repo, path + d.name + "/"); };
-
-        li.appendChild(browse);
-        li.appendChild(zip);
+        li.appendChild(a);
         ul.appendChild(li);
       });
 
-      // files (GitHub Pages links)
+      // add files
       data.filter(item => item.type === "file").forEach(f => {
         const li = document.createElement("li");
         li.textContent = "📄 " + f.name;
@@ -194,53 +106,9 @@
         li.appendChild(open);
         ul.appendChild(li);
       });
-    }
 
-    async function downloadFolderAsZip(repo, path) {
-      const progress = document.getElementById("progress");
-      progress.style.display = "block";
-
-      const zip = new JSZip();
-      await addFolderToZip(zip, repo, path);
-
-      const folderName = path === "" ? repo : path.split("/").filter(Boolean).pop();
-      const blob = await zip.generateAsync({ type: "blob" });
-      saveAs(blob, folderName + ".zip");
-
-      progress.style.display = "none";
-    }
-
-    async function addFolderToZip(zip, repo, path) {
-      const res = await fetch(getApiUrl(repo, path));
-      const data = await res.json();
-
-      for (const item of data) {
-        if (item.type === "file") {
-          const fileRes = await fetch(item.download_url);
-          const blob = await fileRes.blob();
-          zip.file(path + item.name, blob);
-        } else if (item.type === "dir") {
-          const folder = zip.folder(path + item.name);
-          await addFolderToZip(folder, repo, path + item.name + "/");
-        }
-      }
-    }
-
-    function getApiUrl(repo, path) {
-      if (repo === "main") {
-        return `https://api.github.com/repos/55guh/55guh.github.io/contents/file/${path}`;
-      }
-      return `https://api.github.com/repos/55guh/${repo}/contents/${path}`;
-    }
-
-    function goBack() {
-      historyStack.pop();
-      if (historyStack.length === 0) {
-        listRepos();
-      } else {
-        const last = historyStack[historyStack.length - 1];
-        openRepo(last.repo, last.path);
-      }
+      filesDiv.innerHTML = "<h2>Files in " + repo + "/" + path + "</h2>";
+      filesDiv.appendChild(ul);
     }
 
     listRepos();
