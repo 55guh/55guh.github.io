@@ -39,7 +39,7 @@
 
       const ul = document.createElement("ul");
 
-      // Add main manually so we can control it
+      // Add "main" manually
       const mainLi = document.createElement("li");
       const mainLink = document.createElement("a");
       mainLink.href = "#";
@@ -74,6 +74,13 @@
       const res = await fetch(apiURL);
       const data = await res.json();
       const filesDiv = document.getElementById("files");
+      filesDiv.innerHTML = "<h2>Files in " + repo + "/" + path + "</h2>";
+
+      // If API returned an error object
+      if (!Array.isArray(data)) {
+        filesDiv.innerHTML += `<p style="color:red">Error: ${data.message || "Unknown error"}</p>`;
+        return;
+      }
 
       const ul = document.createElement("ul");
 
@@ -84,7 +91,6 @@
         a.href = "#";
         a.textContent = "📁 " + d.name;
         a.onclick = () => listFiles(repo, path + d.name + "/");
-
         li.appendChild(a);
         ul.appendChild(li);
       });
@@ -107,7 +113,6 @@
         ul.appendChild(li);
       });
 
-      filesDiv.innerHTML = "<h2>Files in " + repo + "/" + path + "</h2>";
       filesDiv.appendChild(ul);
     }
 
