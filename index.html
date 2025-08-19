@@ -3,257 +3,153 @@
 <head>
   <meta charset="UTF-8">
   <title>55Guh</title>
-  <link href="https://fonts.googleapis.com/css2?family=Oswald:wght@700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Oswald:wght@400;700&display=swap" rel="stylesheet">
   <style>
     body {
       font-family: 'Oswald', sans-serif;
       margin: 20px;
-      background: #f5f5f5;
-      color: #222;
+      background: #f6f8fa;
+      color: #24292f;
     }
-    h1 {
-      font-size: 32px;
-    }
-    .repo-list {
-      margin-top: 20px;
-    }
-    .repo-list li {
-      list-style: none;
-      margin: 8px 0;
-    }
-    .repo-list li a {
-      text-decoration: none;
-      color: #0366d6;
-      font-size: 18px;
-    }
-    .breadcrumbs {
-      margin: 15px 0;
-      font-size: 14px;
-    }
-    .breadcrumbs span {
-      margin-right: 5px;
-    }
-    .search-bar {
-      margin: 15px 0;
-    }
-    .search-bar input {
-      padding: 5px;
-      width: 250px;
-    }
-    .search-bar button {
-      padding: 6px 10px;
-      margin-left: 5px;
-    }
-    .file-list {
-      margin-top: 10px;
-    }
-    .file-list li {
-      list-style: none;
-      margin: 6px 0;
-    }
-    .file-list li a {
-      text-decoration: none;
-      color: #0366d6;
-    }
-    #viewer {
-      margin-top: 20px;
-      padding: 10px;
-      border: 1px solid #ccc;
-      background: #fff;
-    }
-    #editor-container {
-      display: none;
-      margin-top: 20px;
-    }
-    #editor-tools {
-      margin-bottom: 10px;
-    }
-    canvas {
-      border: 1px solid #666;
-      display: block;
-      margin-bottom: 10px;
-      max-width: 100%;
-    }
-    .go-back {
-      margin: 10px 0;
-      display: inline-block;
-      padding: 6px 12px;
-      background: #0366d6;
-      color: white;
-      border-radius: 4px;
-      cursor: pointer;
-      text-decoration: none;
-    }
+    h1 { font-size: 2em; }
+    h2 { font-size: 1.2em; margin-top: 0; }
+    ul { list-style: none; padding: 0; }
+    li { margin: 6px 0; }
+    a { text-decoration: none; color: #0366d6; }
+    a:hover { text-decoration: underline; }
+    .breadcrumbs { margin: 10px 0; }
+    .breadcrumbs a { margin-right: 5px; }
+    .file-viewer { margin-top: 20px; border: 1px solid #ddd; padding: 10px; background: #fff; }
+    .toolbar { margin-top: 10px; }
+    button { margin: 2px; }
+    canvas { max-width: 100%; display: block; margin-top: 10px; }
+    #downloadBtn { margin-top: 10px; display: inline-block; }
   </style>
 </head>
 <body>
   <h1>55Guh</h1>
-  <div id="date"></div>
-
-  <div class="search-bar">
-    <input id="search" type="text" placeholder="Search (* = wildcard)">
-    <button onclick="doSearch()">Enter</button>
-    <button onclick="clearSearch()">Clear</button>
-  </div>
-
+  <h2 id="date"></h2>
   <div class="breadcrumbs" id="breadcrumbs"></div>
-  <a class="go-back" onclick="goBack()">⬅ Go Back</a>
-
-  <ul class="repo-list" id="repoList"></ul>
-  <ul class="file-list" id="fileList"></ul>
-
-  <div id="viewer"></div>
-
-  <div id="editor-container">
-    <div id="editor-tools">
-      <label>Brightness: <input type="range" min="-100" max="100" value="0" id="brightness"></label>
-      <label>Contrast: <input type="range" min="-100" max="100" value="0" id="contrast"></label>
-      <label>Hue: <input type="range" min="0" max="360" value="0" id="hue"></label>
-      <label>Saturation: <input type="range" min="0" max="200" value="100" id="saturation"></label>
-      <label>Value: <input type="range" min="0" max="200" value="100" id="value"></label>
-      <button onclick="downloadImage()">Download</button>
-      <button onclick="closeEditor()">Close Editor</button>
-    </div>
-    <canvas id="editorCanvas"></canvas>
+  <div id="repo-list"></div>
+  <div class="file-viewer" id="file-viewer" style="display:none;">
+    <button onclick="goBack()">⬅ Go Back</button>
+    <div id="viewer-content"></div>
+    <a id="downloadBtn" href="#" download style="display:none;">⬇ Download File</a>
   </div>
 
-  <script>
-    const repos = ["55guh.github.io","etc","underwhere"];
-    let currentRepo = null;
-    let currentPath = [];
+<script>
+const user = "55guh";
+let currentRepo = null;
+let currentPath = "";
 
-    function loadRepos() {
-      const list = document.getElementById("repoList");
-      list.innerHTML = "<b>Select a repo:</b>";
-      repos.forEach(r => {
-        const li = document.createElement("li");
-        li.innerHTML = "📦 <a href='#' onclick='openRepo(\""+r+"\")'>"+r+"</a>";
-        list.appendChild(li);
-      });
+// Date
+document.getElementById("date").textContent = new Date().toLocaleDateString(
+  "en-US",
+  { year: "numeric", month: "long", day: "numeric" }
+);
+
+// List repos
+async function listRepos() {
+  const res = await fetch(`https://api.github.com/users/${user}/repos`);
+  const repos = await res.json();
+  const list = document.getElementById("repo-list");
+  list.innerHTML = "<h3>Select a repo:</h3><ul>" + repos.map(r =>
+    `<li>📦 <a href="#" onclick="openRepo('${r.name}')">${r.name}</a></li>`
+  ).join("") + "</ul>";
+}
+
+async function openRepo(repo, path = "") {
+  currentRepo = repo;
+  currentPath = path;
+  updateBreadcrumbs();
+  const url = `https://api.github.com/repos/${user}/${repo}/contents/${path}`;
+  const res = await fetch(url);
+  const items = await res.json();
+  const list = document.getElementById("repo-list");
+  if (Array.isArray(items)) {
+    let dirs = items.filter(i => i.type === "dir");
+    let files = items.filter(i => i.type === "file" && i.name !== "index.html");
+    list.innerHTML = `<h3>Browsing: ${repo}/${path}</h3>
+      <button onclick="goBack()">⬅ Go Back</button>
+      <ul>` + dirs.map(d =>
+        `<li>📂 <a href="#" onclick="openRepo('${repo}', '${path}${d.name}/')">${d.name}</a></li>`
+      ).join("") +
+      files.map(f =>
+        `<li>📄 <a href="#" onclick="openFile('${repo}', '${path}${f.name}')">${f.name}</a></li>`
+      ).join("") + "</ul>";
+  }
+}
+
+function goBack() {
+  if (!currentPath) {
+    listRepos();
+  } else {
+    const up = currentPath.split("/").slice(0, -2).join("/") + "/";
+    openRepo(currentRepo, up);
+  }
+}
+
+async function openFile(repo, filepath) {
+  const url = `https://raw.githubusercontent.com/${user}/${repo}/main/${filepath}`;
+  const viewer = document.getElementById("file-viewer");
+  const contentDiv = document.getElementById("viewer-content");
+  const downloadBtn = document.getElementById("downloadBtn");
+  viewer.style.display = "block";
+  contentDiv.innerHTML = "Loading...";
+
+  try {
+    const res = await fetch(url);
+    const blob = await res.blob();
+
+    // Decide if binary or text
+    if (blob.type.startsWith("image/")) {
+      const imgURL = URL.createObjectURL(blob);
+      contentDiv.innerHTML = `<img id="img" src="${imgURL}" style="max-width:100%;">`;
+      downloadBtn.style.display = "inline-block";
+      downloadBtn.href = imgURL;
+      downloadBtn.download = filepath.split("/").pop();
+    } else if (blob.type.startsWith("video/")) {
+      const vidURL = URL.createObjectURL(blob);
+      contentDiv.innerHTML = `<video controls src="${vidURL}" style="max-width:100%"></video>`;
+      downloadBtn.style.display = "inline-block";
+      downloadBtn.href = vidURL;
+      downloadBtn.download = filepath.split("/").pop();
+    } else if (blob.type.startsWith("text/") || filepath.endsWith(".md")) {
+      const text = await res.text();
+      contentDiv.innerHTML = `<pre>${escapeHtml(text)}</pre>`;
+      downloadBtn.style.display = "inline-block";
+      downloadBtn.href = url;
+      downloadBtn.download = filepath.split("/").pop();
+    } else {
+      contentDiv.innerHTML = `<p>This file type cannot be displayed.</p>`;
+      downloadBtn.style.display = "inline-block";
+      downloadBtn.href = url;
+      downloadBtn.download = filepath.split("/").pop();
     }
+  } catch {
+    contentDiv.innerHTML = `<p>Error loading file.</p>`;
+    downloadBtn.style.display = "none";
+  }
+}
 
-    function openRepo(repo) {
-      currentRepo = repo;
-      currentPath = [];
-      loadDir();
-    }
+function updateBreadcrumbs() {
+  let parts = currentPath.split("/").filter(p => p);
+  let crumbHTML = `<a href="#" onclick="listRepos()">Repos</a> / <a href="#" onclick="openRepo('${currentRepo}')">${currentRepo}</a>`;
+  let built = "";
+  parts.forEach((p, i) => {
+    built += p + "/";
+    crumbHTML += ` / <a href="#" onclick="openRepo('${currentRepo}', '${built}')">${p}</a>`;
+  });
+  document.getElementById("breadcrumbs").innerHTML = crumbHTML;
+}
 
-    function loadDir() {
-      updateBreadcrumbs();
-      document.getElementById("repoList").style.display="none";
-      const list = document.getElementById("fileList");
-      list.innerHTML = "";
+function escapeHtml(text) {
+  let div = document.createElement("div");
+  div.innerText = text;
+  return div.innerHTML;
+}
 
-      fetch(`https://api.github.com/repos/55guh/${currentRepo}/contents/${currentPath.join("/")}`)
-        .then(r=>r.json()).then(data=>{
-          let dirs = data.filter(f=>f.type==="dir");
-          let files = data.filter(f=>f.type==="file");
-          dirs.forEach(d=>{
-            const li=document.createElement("li");
-            li.innerHTML="📂 <a href='#' onclick='enterDir(\""+d.name+"\")'>"+d.name+"</a>";
-            list.appendChild(li);
-          });
-          files.forEach(f=>{
-            const li=document.createElement("li");
-            li.innerHTML="📄 <a href='#' onclick='viewFile(\""+f.name+"\",\""+f.download_url+"\")'>"+f.name+"</a>";
-            list.appendChild(li);
-          });
-        });
-    }
-
-    function enterDir(name){
-      currentPath.push(name);
-      loadDir();
-    }
-
-    function goBack(){
-      if(currentPath.length>0){
-        currentPath.pop();
-        loadDir();
-      } else {
-        document.getElementById("fileList").innerHTML="";
-        document.getElementById("repoList").style.display="block";
-        document.getElementById("breadcrumbs").innerHTML="";
-      }
-    }
-
-    function updateBreadcrumbs(){
-      const bc = document.getElementById("breadcrumbs");
-      let path = currentPath.join("/");
-      bc.innerHTML = `<span>${currentRepo}</span> / <span>${path || ""}</span>`;
-    }
-
-    function viewFile(name,url){
-      const viewer=document.getElementById("viewer");
-      viewer.innerHTML="";
-
-      if(name.match(/\.(png|jpg|jpeg|gif)$/i)){
-        const img=document.createElement("img");
-        img.src=url;
-        img.onload=()=>openEditor(img);
-        viewer.appendChild(img);
-      } else if(name.match(/\.(txt|md|html|css|js)$/i)){
-        fetch(url).then(r=>r.text()).then(t=>{
-          viewer.innerHTML="<pre>"+escapeHtml(t)+"</pre>";
-        });
-      } else if(name.match(/\.(mp4|webm|ogg)$/i)){
-        viewer.innerHTML=`<video controls src="${url}" width="600"></video>`;
-      } else {
-        viewer.innerHTML="Binary or unsupported file.";
-      }
-    }
-
-    function escapeHtml(text){
-      return text.replace(/[&<>"']/g,m=>{
-        return {"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#039;"}[m];
-      });
-    }
-
-    function openEditor(img){
-      const canvas=document.getElementById("editorCanvas");
-      const ctx=canvas.getContext("2d");
-      canvas.width=img.width;
-      canvas.height=img.height;
-      ctx.drawImage(img,0,0);
-      document.getElementById("editor-container").style.display="block";
-    }
-
-    function closeEditor(){
-      document.getElementById("editor-container").style.display="none";
-    }
-
-    function downloadImage(){
-      const canvas=document.getElementById("editorCanvas");
-      const link=document.createElement("a");
-      link.download="edited.png";
-      link.href=canvas.toDataURL();
-      link.click();
-    }
-
-    function doSearch(){
-      const query=document.getElementById("search").value.toLowerCase();
-      if(!query) return;
-      const items=[...document.querySelectorAll("#fileList li, #repoList li")];
-      items.forEach(li=>{
-        const txt=li.innerText.toLowerCase();
-        li.style.display=txt.includes(query.replace("*",""))?"block":"none";
-      });
-    }
-    function clearSearch(){
-      document.getElementById("search").value="";
-      const items=[...document.querySelectorAll("#fileList li, #repoList li")];
-      items.forEach(li=>li.style.display="block");
-    }
-
-    function updateDate(){
-      const d=new Date();
-      const opts={month:"long",day:"numeric",year:"numeric"};
-      const formatted=d.toLocaleDateString("en-US",opts);
-      document.getElementById("date").innerText=formatted;
-    }
-
-    updateDate();
-    loadRepos();
-  </script>
+listRepos();
+</script>
 </body>
 </html>
