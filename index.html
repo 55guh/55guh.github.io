@@ -1,273 +1,241 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
-  <meta charset="utf-8" />
+  <meta charset="UTF-8">
   <title>55Guh</title>
+  <link href="https://fonts.googleapis.com/css2?family=Oswald&display=swap" rel="stylesheet">
   <style>
     body {
-      font-family: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial;
-      background: #0b0f12;
-      color: #e6edf3;
-      margin: 18px;
+      font-family: 'Oswald', sans-serif;
+      margin: 0;
+      padding: 0;
+      background: #111;
+      color: #eee;
     }
-    a { color: #6bd1ff; text-decoration: none; cursor: pointer; }
-    a:hover { text-decoration: underline; }
-    button { margin: 6px 6px 6px 0; }
-    #progressContainer { margin-top: 12px; display:none; }
-    #progressBar { width: 100%; height: 18px; }
-    ul { padding-left: 0; list-style: none; }
-    li { margin: 6px 0; }
-    #breadcrumbs { margin-bottom: 8px; color: #9fb7c7; }
-    .muted { color: #8aa3b4; }
+    #fileList {
+      padding: 20px;
+    }
+    a {
+      color: #4fa3ff;
+      text-decoration: none;
+    }
+    a:hover {
+      text-decoration: underline;
+    }
+    #breadcrumbs {
+      margin-bottom: 15px;
+    }
+    #breadcrumbs a {
+      color: #ffcc00;
+      margin-right: 5px;
+    }
+    #progress {
+      margin: 10px 0;
+      display: none;
+      color: #ffcc00;
+    }
   </style>
 </head>
 <body>
-  <h2>55Guh</h2>
-  <div id="breadcrumbs"></div>
   <div id="fileList"></div>
 
-  <div id="progressContainer">
-    <p class="muted">📦 Building ZIP — please wait</p>
-    <progress id="progressBar" value="0" max="100"></progress>
-  </div>
-
-  <!-- JSZip + FileSaver -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
 
   <script>
-    const user = "55guh";
-    let currentRepo = null;
-    let currentPath = "";
-    let historyStack = [];
+    const historyStack = [];
 
-    // List user repos (initial view)
     async function listRepos() {
-      currentRepo = null;
-      currentPath = "";
-      updateBreadcrumbs();
+      const list = document.getElementById("fileList");
+      list.innerHTML = `<h2>Repos</h2><ul id="repoList"></ul>`;
+      const ul = document.getElementById("repoList");
 
-      const container = document.getElementById("fileList");
-      container.innerHTML = "<h3>Select a repo:</h3><ul id='repos'></ul>";
-      const ul = document.getElementById("repos");
+      // Add "main" repo manually
+      const liMain = document.createElement("li");
+      const aMain = document.createElement("a");
+      aMain.href = "#";
+      aMain.textContent = "main";
+      aMain.onclick = e => { e.preventDefault(); openRepo("main", ""); };
+      liMain.appendChild(aMain);
+      ul.appendChild(liMain);
 
-      try {
-        const res = await fetch(`https://api.github.com/users/${user}/repos`);
-        if (!res.ok) {
-          container.innerHTML = `<p>Failed to load repos: ${res.status} ${res.statusText}</p>`;
-          return;
-        }
-        const repos = await res.json();
-        repos.forEach(r => {
-          const li = document.createElement("li");
-          const a = document.createElement("a");
-          a.textContent = "📦 " + r.name;
-          a.href = "#";
-          a.addEventListener("click", (e) => {
-            e.preventDefault();
-            openRepo(r.name, "");
-          });
-          li.appendChild(a);
-          ul.appendChild(li);
-        });
-      } catch (err) {
-        container.innerHTML = `<p>Error: ${err.message}</p>`;
-      }
-    }
+      // Fetch other repos
+      const res = await fetch("https://api.github.com/users/55guh/repos");
+      const repos = await res.json();
 
-    // Open a repo / folder
-    async function openRepo(repo, path = "", fromHistory = false) {
-      // push current state to history (unless coming from history navigation or initial)
-      if (!fromHistory && currentRepo !== null) {
-        historyStack.push({ repo: currentRepo, path: currentPath });
-      }
-
-      currentRepo = repo;
-      currentPath = path;
-      updateBreadcrumbs();
-
-      const container = document.getElementById("fileList");
-      container.innerHTML = `
-        <h3>Browsing: ${repo}/${path}</h3>
-        <button id="backBtn">⬅ Go Back</button>
-        <button id="repoZipBtn">📦 Download This Folder as ZIP</button>
-        <ul id="items"><li class="muted">Loading...</li></ul>
-      `;
-
-      document.getElementById("backBtn").addEventListener("click", () => goBack());
-      document.getElementById("repoZipBtn").addEventListener("click", () => {
-        downloadFolderAsZip(repo, path);
+      repos.forEach(repo => {
+        if (repo.name === "55guh.github.io") return; // skip main repo duplicate
+        const li = document.createElement("li");
+        const a = document.createElement("a");
+        a.href = "#";
+        a.textContent = repo.name;
+        a.onclick = e => { e.preventDefault(); openRepo(repo.name, ""); };
+        li.appendChild(a);
+        ul.appendChild(li);
       });
-
-      // fetch contents from GitHub API
-      try {
-        const apiUrl = getApiUrl(repo, path);
-        const res = await fetch(apiUrl);
-        if (!res.ok) {
-          const text = await res.text();
-          document.getElementById("items").innerHTML =
-            `<li>❌ Failed to load folder: ${res.status} ${res.statusText}</li>`;
-          return;
-        }
-        const items = await res.json();
-
-        // If GitHub sends an object with message (rate limit / error), show it
-        if (items && items.message) {
-          document.getElementById("items").innerHTML = `<li>❌ ${items.message}</li>`;
-          return;
-        }
-
-        const ul = document.getElementById("items");
-        ul.innerHTML = "";
-
-        // directories
-        items.filter(it => it.type === "dir").forEach(d => {
-          const li = document.createElement("li");
-          li.textContent = "📂 " + d.name + " ";
-
-          const browse = document.createElement("a");
-          browse.href = "#";
-          browse.textContent = "[Browse]";
-          browse.addEventListener("click", (e) => {
-            e.preventDefault();
-            openRepo(repo, path + d.name + "/");
-          });
-
-          const zip = document.createElement("a");
-          zip.href = "#";
-          zip.textContent = " [ZIP]";
-          zip.style.marginLeft = "8px";
-          zip.addEventListener("click", (e) => {
-            e.preventDefault();
-            downloadFolderAsZip(repo, path + d.name + "/");
-          });
-
-          li.appendChild(browse);
-          li.appendChild(zip);
-          ul.appendChild(li);
-        });
-
-        // files
-        items.filter(it => it.type === "file").forEach(f => {
-          const li = document.createElement("li");
-          li.textContent = "📄 " + f.name + " ";
-
-          const a = document.createElement("a");
-          a.href = f.download_url;
-          a.textContent = "[Download]";
-          a.setAttribute("download", f.name);
-
-          li.appendChild(a);
-          ul.appendChild(li);
-        });
-
-        // if folder empty
-        if (items.length === 0) {
-          document.getElementById("items").innerHTML = "<li class='muted'>This folder is empty.</li>";
-        }
-      } catch (err) {
-        document.getElementById("items").innerHTML = `<li>Error: ${err.message}</li>`;
-      }
     }
 
-    // go back in history
-    function goBack() {
-      if (historyStack.length === 0) {
-        // back to repo list
-        listRepos();
+    function updateBreadcrumbs(repo, path) {
+      const crumbs = document.createElement("div");
+      crumbs.id = "breadcrumbs";
+
+      const root = document.createElement("a");
+      root.href = "#";
+      root.textContent = "55Guh";
+      root.onclick = e => { e.preventDefault(); listRepos(); };
+      crumbs.appendChild(root);
+
+      if (path || repo) {
+        crumbs.appendChild(document.createTextNode(" / "));
+
+        const repoLink = document.createElement("a");
+        repoLink.href = "#";
+        repoLink.textContent = repo;
+        repoLink.onclick = e => { e.preventDefault(); openRepo(repo, ""); };
+        crumbs.appendChild(repoLink);
+
+        if (path) {
+          const parts = path.split("/").filter(Boolean);
+          let currentPath = "";
+          parts.forEach((part, i) => {
+            crumbs.appendChild(document.createTextNode(" / "));
+            const partLink = document.createElement("a");
+            partLink.href = "#";
+            currentPath += part + "/";
+            partLink.textContent = part;
+            partLink.onclick = e => { e.preventDefault(); openRepo(repo, currentPath); };
+            crumbs.appendChild(partLink);
+          });
+        }
+      }
+
+      return crumbs;
+    }
+
+    async function openRepo(repo, path = "") {
+      historyStack.push({ repo, path });
+
+      const list = document.getElementById("fileList");
+      list.innerHTML = "";
+
+      // breadcrumbs
+      list.appendChild(updateBreadcrumbs(repo, path));
+
+      // progress bar
+      const progress = document.createElement("div");
+      progress.id = "progress";
+      progress.textContent = "Preparing ZIP, please wait...";
+      list.appendChild(progress);
+
+      // main controls
+      const controls = document.createElement("p");
+      const backBtn = document.createElement("button");
+      backBtn.textContent = "⬅ Go Back";
+      backBtn.onclick = () => goBack();
+      controls.appendChild(backBtn);
+
+      const zipBtn = document.createElement("button");
+      zipBtn.textContent = "📦 Download This Folder as ZIP";
+      zipBtn.style.marginLeft = "10px";
+      zipBtn.onclick = () => downloadFolderAsZip(repo, path);
+      controls.appendChild(zipBtn);
+
+      list.appendChild(controls);
+
+      const ul = document.createElement("ul");
+      list.appendChild(ul);
+
+      const res = await fetch(getApiUrl(repo, path));
+      if (!res.ok) {
+        ul.innerHTML = `<li>❌ Failed to load</li>`;
         return;
       }
-      const prev = historyStack.pop();
-      // call openRepo with fromHistory=true so it doesn't push again
-      openRepo(prev.repo, prev.path, true);
+      const data = await res.json();
+
+      // add dirs
+      data.filter(item => item.type === "dir").forEach(d => {
+        const li = document.createElement("li");
+        li.textContent = "📂 " + d.name;
+
+        const browse = document.createElement("a");
+        browse.href = "#";
+        browse.textContent = " [Browse]";
+        browse.onclick = e => { e.preventDefault(); openRepo(repo, path + d.name + "/"); };
+
+        const zip = document.createElement("a");
+        zip.href = "#";
+        zip.textContent = " [ZIP]";
+        zip.style.marginLeft = "5px";
+        zip.onclick = e => { e.preventDefault(); downloadFolderAsZip(repo, path + d.name + "/"); };
+
+        li.appendChild(browse);
+        li.appendChild(zip);
+        ul.appendChild(li);
+      });
+
+      // add files
+      data.filter(item => item.type === "file").forEach(f => {
+        const li = document.createElement("li");
+        li.textContent = "📄 " + f.name;
+
+        const open = document.createElement("a");
+        open.href = f.download_url;
+        open.textContent = " [Download]";
+        open.setAttribute("download", f.name);
+
+        li.appendChild(open);
+        ul.appendChild(li);
+      });
     }
 
-    // Build GitHub API URL — special-case GitHub Pages repo -> "file" folder
-    function getApiUrl(repo, path = "") {
-      if (repo === "55guh.github.io") {
-        // we store main/Pages files under "file/" on the repo
-        return `https://api.github.com/repos/${user}/${repo}/contents/file/${path}`;
-      }
-      return `https://api.github.com/repos/${user}/${repo}/contents/${path}`;
-    }
-
-    // ZIP builder: in-browser, with progress
-    async function downloadFolderAsZip(repo, path = "") {
-      const progressContainer = document.getElementById("progressContainer");
-      const progressBar = document.getElementById("progressBar");
-      progressContainer.style.display = "block";
-      progressBar.value = 0;
+    async function downloadFolderAsZip(repo, path) {
+      const progress = document.getElementById("progress");
+      progress.style.display = "block";
 
       const zip = new JSZip();
+      await addFolderToZip(zip, repo, path);
 
-      // count files first to give progress feedback
-      let totalFiles = 0;
-      try {
-        totalFiles = await countFiles(repo, path);
-      } catch (err) {
-        totalFiles = 0;
-      }
+      const folderName = path === "" ? repo : path.split("/").filter(Boolean).pop();
+      const blob = await zip.generateAsync({ type: "blob" });
+      saveAs(blob, folderName + ".zip");
 
-      let processed = 0;
-      function onProgress() {
-        processed++;
-        if (totalFiles > 0) progressBar.value = (processed / totalFiles) * 100;
-        else progressBar.value = 100;
-      }
-
-      try {
-        await addFolderToZip(zip, repo, path, onProgress);
-        const folderName = (path === "" ? repo : path.split("/").filter(Boolean).pop());
-        const blob = await zip.generateAsync({ type: "blob" }, (meta) => {
-          // meta.percent is generation progress, we can combine it for smoother bar
-          if (totalFiles === 0) progressBar.value = meta.percent;
-        });
-        saveAs(blob, folderName + ".zip");
-      } catch (err) {
-        alert("Failed to build ZIP: " + err.message);
-      } finally {
-        progressContainer.style.display = "none";
-        progressBar.value = 0;
-      }
+      progress.style.display = "none";
     }
 
-    async function countFiles(repo, path = "") {
+    async function addFolderToZip(zip, repo, path) {
       const res = await fetch(getApiUrl(repo, path));
-      if (!res.ok) return 0;
-      const items = await res.json();
-      if (items && items.message) return 0;
-      let count = 0;
-      for (const it of items) {
-        if (it.type === "file") count++;
-        else if (it.type === "dir") {
-          count += await countFiles(repo, path + it.name + "/");
-        }
-      }
-      return count;
-    }
+      const data = await res.json();
 
-    async function addFolderToZip(zip, repo, path = "", onProgress = () => {}) {
-      const res = await fetch(getApiUrl(repo, path));
-      if (!res.ok) throw new Error("Failed to fetch folder: " + res.status);
-      const items = await res.json();
-      if (items && items.message) throw new Error(items.message);
-
-      for (const it of items) {
-        if (it.type === "file") {
-          const fileRes = await fetch(it.download_url);
-          if (!fileRes.ok) throw new Error("Failed to fetch file: " + it.download_url);
+      for (const item of data) {
+        if (item.type === "file") {
+          const fileRes = await fetch(item.download_url);
           const blob = await fileRes.blob();
-          // place file in zip preserving folder structure
-          zip.file(path + it.name, blob);
-          onProgress();
-        } else if (it.type === "dir") {
-          // recurse, preserving path prefix
-          await addFolderToZip(zip, repo, path + it.name + "/", onProgress);
+          zip.file(path + item.name, blob);
+        } else if (item.type === "dir") {
+          const folder = zip.folder(path + item.name);
+          await addFolderToZip(folder, repo, path + item.name + "/");
         }
       }
     }
 
-    // start at repo list
+    function getApiUrl(repo, path) {
+      if (repo === "main") {
+        return `https://api.github.com/repos/55guh/55guh.github.io/contents/file/${path}`;
+      }
+      return `https://api.github.com/repos/55guh/${repo}/contents/${path}`;
+    }
+
+    function goBack() {
+      historyStack.pop();
+      if (historyStack.length === 0) {
+        listRepos();
+      } else {
+        const last = historyStack[historyStack.length - 1];
+        openRepo(last.repo, last.path);
+      }
+    }
+
+    // load repo list on start
     listRepos();
   </script>
 </body>
