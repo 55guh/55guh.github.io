@@ -61,6 +61,7 @@ async function openRepo(repo, path = "") {
     let files = items.filter(i => i.type === "file" && i.name !== "index.html");
     list.innerHTML = `<h3>Browsing: ${repo}/${path}</h3>
       <button onclick="goBack()">⬅ Go Back</button>
+      <p><a href="${buildZipUrl(repo)}">📦 Download Entire Repo as ZIP</a></p>
       <ul>` + dirs.map(d =>
         `<li>📂 <a href="#" onclick="openRepo('${repo}', '${path}${d.name}/')">${d.name}</a></li>`
       ).join("") +
@@ -79,19 +80,30 @@ function goBack() {
   }
 }
 
-async function getDefaultBranch(repo) {
-  const res = await fetch(`https://api.github.com/repos/${user}/${repo}`);
-  const data = await res.json();
-  return data.default_branch || "main";
+// Build download URL for a single file
+function buildDownloadUrl(repo, filepath) {
+  if (repo === "55guh.github.io") {
+    return `https://55guh.github.io/file/${filepath}`;
+  } else {
+    return `https://55guh.github.io/repo/${repo}/file/${filepath}`;
+  }
+}
+
+// Build ZIP URL for a whole repo
+function buildZipUrl(repo) {
+  if (repo === "55guh.github.io") {
+    return `https://55guh.github.io/file.zip`;
+  } else {
+    return `https://55guh.github.io/repo/${repo}/file.zip`;
+  }
 }
 
 async function openFile(repo, filepath) {
-  const branch = await getDefaultBranch(repo);
-  const url = `https://raw.githubusercontent.com/${user}/${repo}/${branch}/${filepath}`;
+  const url = buildDownloadUrl(repo, filepath);
 
   const a = document.createElement("a");
   a.href = url;
-  a.download = filepath.split("/").pop(); // file name
+  a.download = filepath.split("/").pop(); // file name only
   document.body.appendChild(a);
   a.click();
   document.body.removeChild(a);
