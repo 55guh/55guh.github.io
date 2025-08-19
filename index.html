@@ -59,15 +59,20 @@ async function openRepo(repo, path = "") {
   if (Array.isArray(items)) {
     let dirs = items.filter(i => i.type === "dir");
     let files = items.filter(i => i.type === "file" && i.name !== "index.html");
+
+    // Build ZIP URL for current folder
+    let zipUrl = buildZipUrl(repo, path);
+
     list.innerHTML = `<h3>Browsing: ${repo}/${path}</h3>
       <button onclick="goBack()">⬅ Go Back</button>
-      <p><a href="${buildZipUrl(repo)}">📦 Download Entire Repo as ZIP</a></p>
+      <p><a href="${zipUrl}">📦 Download This Folder as ZIP</a></p>
       <ul>` + dirs.map(d =>
-        `<li>📂 <a href="#" onclick="openRepo('${repo}', '${path}${d.name}/')">${d.name}</a></li>`
+        `<li>📂 <a href="#" onclick="openRepo('${repo}', '${path}${d.name}/')">${d.name}</a>
+             - <a href="${buildZipUrl(repo, path + d.name + "/")}">[ZIP]</a></li>`
       ).join("") +
       files.map(f =>
         `<li>📄 <a href="#" onclick="openFile('${repo}', '${path}${f.name}')">${f.name}</a></li>`
-      ).join("") + "</ul>";
+      ).join("") + "</ul>`;
   }
 }
 
@@ -89,12 +94,12 @@ function buildDownloadUrl(repo, filepath) {
   }
 }
 
-// Build ZIP URL for a whole repo
-function buildZipUrl(repo) {
+// Build ZIP URL for repo or subdir
+function buildZipUrl(repo, path = "") {
   if (repo === "55guh.github.io") {
-    return `https://55guh.github.io/file.zip`;
+    return `https://55guh.github.io/file/${path.replace(/\/$/, "")}.zip`;
   } else {
-    return `https://55guh.github.io/repo/${repo}/file.zip`;
+    return `https://55guh.github.io/repo/${repo}/file/${path.replace(/\/$/, "")}.zip`;
   }
 }
 
