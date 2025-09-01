@@ -2,7 +2,7 @@
 <html>
 <head>
   <meta charset="UTF-8">
-  <title>55Guh</title>
+  <title>Moved Permanently</title>
   <link href="https://fonts.googleapis.com/css2?family=Oswald&display=swap" rel="stylesheet">
   <style>
     body {
@@ -25,98 +25,12 @@
   </style>
 </head>
 <body>
-  <h1>55Guh</h1>
-  <div id="repos"></div>
-  <div id="files"></div>
+  <h1>55Guh Has moves</h1>
+<h3>All files are still accessable using the github site (github.com)</h3>
+  <h3>In conclusion, we have moved to a new home <a href="https://tinyurl.com/ggtfiles">here</a>.</h3>
 
-  <script>
-    const user = "55guh";
+  <small>(C) Dr. JJ Jr. 2025</small>
+  
 
-    async function listRepos() {
-      const res = await fetch(`https://api.github.com/users/${user}/repos`);
-      const repos = await res.json();
-      const reposDiv = document.getElementById("repos");
-
-      const ul = document.createElement("ul");
-
-      // Add "main" manually
-      const mainLi = document.createElement("li");
-      const mainLink = document.createElement("a");
-      mainLink.href = "#";
-      mainLink.textContent = "main";
-      mainLink.onclick = () => listFiles("main", "");
-      mainLi.appendChild(mainLink);
-      ul.appendChild(mainLi);
-
-      repos.forEach(repo => {
-        if (repo.name === `${user}.github.io`) return; // skip pages repo
-        const li = document.createElement("li");
-        const a = document.createElement("a");
-        a.href = "#";
-        a.textContent = repo.name;
-        a.onclick = () => listFiles(repo.name, "");
-        li.appendChild(a);
-        ul.appendChild(li);
-      });
-
-      reposDiv.innerHTML = "<h2>Repositories</h2>";
-      reposDiv.appendChild(ul);
-    }
-
-    async function listFiles(repo, path) {
-      let apiURL;
-      if (repo === "main") {
-        apiURL = `https://api.github.com/repos/${user}/${user}.github.io/contents/file/${path}`;
-      } else {
-        apiURL = `https://api.github.com/repos/${user}/${repo}/contents/${path}`;
-      }
-
-      const res = await fetch(apiURL);
-      const data = await res.json();
-      const filesDiv = document.getElementById("files");
-      filesDiv.innerHTML = "<h2>Files in " + repo + "/" + path + "</h2>";
-
-      // If API returned an error object
-      if (!Array.isArray(data)) {
-        filesDiv.innerHTML += `<p style="color:red">Error: ${data.message || "Unknown error"}</p>`;
-        return;
-      }
-
-      const ul = document.createElement("ul");
-
-      // add dirs
-      data.filter(item => item.type === "dir").forEach(d => {
-        const li = document.createElement("li");
-        const a = document.createElement("a");
-        a.href = "#";
-        a.textContent = "📁 " + d.name;
-        a.onclick = () => listFiles(repo, path + d.name + "/");
-        li.appendChild(a);
-        ul.appendChild(li);
-      });
-
-      // add files
-      data.filter(item => item.type === "file").forEach(f => {
-        const li = document.createElement("li");
-        li.textContent = "📄 " + f.name;
-
-        const open = document.createElement("a");
-        if (repo === "main") {
-          open.href = `https://55guh.github.io/file/${path}${f.name}`;
-        } else {
-          open.href = `https://55guh.github.io/${repo}/${path}${f.name}`;
-        }
-        open.textContent = " [Download]";
-        open.setAttribute("download", f.name);
-
-        li.appendChild(open);
-        ul.appendChild(li);
-      });
-
-      filesDiv.appendChild(ul);
-    }
-
-    listRepos();
-  </script>
-</body>
+  </body>
 </html>
